@@ -138,3 +138,9 @@ $radius-lg: 14px;
 .field-hint { color: $text-3; font-size: 0.78rem; }
 .form-error-server { padding: 0.7rem 0.9rem; border-radius: $radius-sm; background: $red-lt; border: 1px solid #fecaca; color: $red; font-size: 0.85rem; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.25rem; }
+.confirm-text { margin: 0 0 1rem; color: $text-2; font-size: 0.9rem; line-height: 1.45; }
+.btn-accion {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.32rem 0.7rem; font-size: 0.8rem; white-space: nowrap;
+  .material-icons-outlined { font-size: 1rem; }
+}

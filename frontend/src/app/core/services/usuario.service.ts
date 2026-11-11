@@ -17,5 +17,10 @@ export class UsuarioService {
   crearUsuario(dto: CrearUsuarioDto): Observable<UsuarioListado> {
     return this.http.post<UsuarioListado>(this.apiUrl, dto);
   }
+
+  /** Restablece la contraseña de un usuario (solo Administrador). No devuelve contraseña ni hash. */
+  restablecerPassword(id: number, nuevaPassword: string): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/${id}/password`, { nuevaPassword });
+  }
 }
 

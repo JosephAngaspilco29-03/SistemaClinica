@@ -10,4 +10,6 @@ public interface IUsuarioRepository
     Task<Usuario?> ObtenerPorNombreUsuarioAsync(string nombreUsuario);
     Task<Usuario?> ObtenerPorIdAsync(int id);
     Task<Usuario> CrearAsync(Usuario usuario);
+    Task<Usuario?> ObtenerParaActualizarAsync(int id);
+    Task ActualizarPasswordHashAsync(Usuario usuario, string passwordHash);
 }

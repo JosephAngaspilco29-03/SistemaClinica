@@ -127,4 +127,23 @@ public class AuthController : ControllerBase
             return Conflict(new { mensaje = ex.Message });
         }
     }
+
+    // PUT /api/Auth/usuarios/{id}/password
+    [HttpPut("usuarios/{id:int}/password")]
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> RestablecerPassword(int id, [FromBody] RestablecerPasswordDto dto)
+    {
+        try
+        {
+            var actualizado = await _authService.RestablecerPasswordAsync(id, dto);
+            if (!actualizado)
+                return NotFound(new { mensaje = "El usuario no existe." });
+
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { mensaje = ex.Message });
+        }
+    }
 }

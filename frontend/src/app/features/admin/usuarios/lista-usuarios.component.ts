@@ -25,6 +25,13 @@ function validarCuenta(group: AbstractControl): ValidationErrors | null {
   return Object.keys(errores).length ? errores : null;
 }
 
+/** Nueva contraseña y confirmación iguales. */
+function validarResetPassword(group: AbstractControl): ValidationErrors | null {
+  return group.get('nuevaPassword')?.value !== group.get('confirmarPassword')?.value
+    ? { passwordMismatch: true }
+    : null;
+}
+
 @Component({
   selector: 'app-lista-usuarios',
   standalone: true,
@@ -199,6 +206,73 @@ export class ListaUsuariosComponent implements OnInit {
         this.errorServidor.set(this.mensajeError(err));
       }
     });
+  }
+
+  // ── Restablecer contraseña ──
+  usuarioReset = signal<UsuarioListado | null>(null);
+  guardandoReset = signal(false);
+  errorReset = signal<string | null>(null);
+
+  formReset = this.fb.group({
+    nuevaPassword: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(100)]],
+    confirmarPassword: ['', [Validators.required]]
+  }, { validators: validarResetPassword });
+
+  abrirReset(u: UsuarioListado) {
+    this.formReset.reset({ nuevaPassword: '', confirmarPassword: '' });
+    this.errorReset.set(null);
+    this.usuarioReset.set(u);
+  }
+
+  cerrarReset() {
+    if (this.guardandoReset()) return;
+    this.formReset.reset({ nuevaPassword: '', confirmarPassword: '' });
+    this.usuarioReset.set(null);
+  }
+
+  campoResetInvalido(nombre: string): boolean {
+    const c = this.formReset.get(nombre);
+    return !!c && c.invalid && (c.touched || c.dirty);
+  }
+
+  confirmarReset() {
+    const u = this.usuarioReset();
+    if (!u || this.guardandoReset()) return;
+    if (this.formReset.invalid) {
+      this.formReset.markAllAsTouched();
+      return;
+    }
+
+    this.guardandoReset.set(true);
+    this.errorReset.set(null);
+
+    this.usuarioService.restablecerPassword(u.id, this.formReset.getRawValue().nuevaPassword!).subscribe({
+      next: () => {
+        this.guardandoReset.set(false);
+        // No se conserva la contraseña en memoria
+        this.formReset.reset({ nuevaPassword: '', confirmarPassword: '' });
+        this.usuarioReset.set(null);
+        this.mostrarMensaje(`Contraseña de "${u.nombreUsuario}" restablecida correctamente.`);
+      },
+      error: (err) => {
+        this.guardandoReset.set(false);
+        this.errorReset.set(this.mensajeErrorReset(err));
+      }
+    });
+  }
+
+  private mensajeErrorReset(err: any): string {
+    if (err?.status === 0) return 'No se pudo conectar con el servidor.';
+    if (err?.status === 401) return 'Su sesión ha expirado. Inicie sesión nuevamente.';
+    if (err?.status === 403) return 'No tiene permisos para restablecer contraseñas.';
+    if (err?.status === 404) return 'El usuario ya no existe. Actualice la lista.';
+    const body = err?.error;
+    if (body?.mensaje) return body.mensaje;
+    if (body?.errors) {
+      const msgs = Object.values(body.errors).flat() as string[];
+      if (msgs.length) return msgs.join(' ');
+    }
+    return 'Ocurrió un error al restablecer la contraseña. Intente nuevamente.';
   }
 
   private mensajeError(err: any): string {

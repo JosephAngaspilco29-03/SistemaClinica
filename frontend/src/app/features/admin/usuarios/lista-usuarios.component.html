@@ -86,6 +86,7 @@
             <th scope="col">Rol</th>
             <th scope="col">Médico / Paciente asociado</th>
             <th scope="col">Estado</th>
+            <th scope="col">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -106,6 +107,13 @@
                   <span class="badge-dot"></span>
                   {{ u.activo ? 'Activo' : 'Inactivo' }}
                 </span>
+              </td>
+              <td>
+                <button type="button" class="btn btn-accion" (click)="abrirReset(u)"
+                        [attr.aria-label]="'Restablecer contraseña de ' + u.nombreUsuario">
+                  <span class="material-icons-outlined">lock_reset</span>
+                  Restablecer contraseña
+                </button>
               </td>
             </tr>
           }
@@ -191,6 +199,46 @@
             <button type="button" class="btn" (click)="cerrarFormulario()" [disabled]="guardando()">Cancelar</button>
             <button type="submit" class="btn btn-primary" [disabled]="guardando()">
               {{ guardando() ? 'Guardando...' : 'Crear usuario' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+  @if (usuarioReset(); as ur) {
+    <div class="modal-backdrop" (click)="cerrarReset()">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="titulo-reset" (click)="$event.stopPropagation()">
+        <h2 id="titulo-reset" class="modal-title">Restablecer contraseña</h2>
+        <p class="confirm-text">
+          Defina una nueva contraseña para <strong>{{ ur.nombreUsuario }}</strong> ({{ ur.rol }}).
+          Los datos y el rol del usuario no se modifican.
+        </p>
+
+        <form [formGroup]="formReset" (ngSubmit)="confirmarReset()" novalidate autocomplete="off">
+          <div class="form-field">
+            <label for="r-password">Nueva contraseña *</label>
+            <input id="r-password" type="password" formControlName="nuevaPassword" maxlength="100" autocomplete="new-password" />
+            @if (campoResetInvalido('nuevaPassword')) {
+              <small class="field-error">La contraseña debe tener entre 8 y 100 caracteres.</small>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="r-confirm">Confirmar contraseña *</label>
+            <input id="r-confirm" type="password" formControlName="confirmarPassword" maxlength="100" autocomplete="new-password" />
+            @if (formReset.controls.confirmarPassword.touched && formReset.hasError('passwordMismatch')) {
+              <small class="field-error">Las contraseñas no coinciden.</small>
+            }
+          </div>
+
+          @if (errorReset(); as msg) {
+            <div class="form-error-server" role="alert">{{ msg }}</div>
+          }
+
+          <div class="modal-actions">
+            <button type="button" class="btn" (click)="cerrarReset()" [disabled]="guardandoReset()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="guardandoReset()">
+              {{ guardandoReset() ? 'Guardando...' : 'Restablecer contraseña' }}
             </button>
           </div>
         </form>

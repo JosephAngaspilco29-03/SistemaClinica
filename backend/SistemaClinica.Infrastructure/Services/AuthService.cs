@@ -177,6 +177,25 @@ public class AuthService : IAuthService
         return usuarios.Select(MapearADto).ToList();
     }
 
+    public async Task<bool> RestablecerPasswordAsync(int usuarioId, RestablecerPasswordDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.NuevaPassword) || dto.NuevaPassword.Length < 8)
+            throw new InvalidOperationException("La contraseña es obligatoria y debe tener al menos 8 caracteres.");
+
+        if (dto.NuevaPassword.Length > 100)
+            throw new InvalidOperationException("La contraseña no puede superar los 100 caracteres.");
+
+        var usuario = await _usuarioRepository.ObtenerParaActualizarAsync(usuarioId);
+        if (usuario == null)
+            return false;
+
+        // Mismo mecanismo de hash que el alta de usuarios y la verificación del login.
+        var nuevoHash = _passwordHasher.HashPassword(usuario, dto.NuevaPassword);
+        await _usuarioRepository.ActualizarPasswordHashAsync(usuario, nuevoHash);
+
+        return true;
+    }
+
     private static UsuarioDto MapearADto(Usuario usuario)
     {
         return new UsuarioDto

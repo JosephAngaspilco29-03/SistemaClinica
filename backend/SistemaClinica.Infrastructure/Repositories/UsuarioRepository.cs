@@ -43,4 +43,17 @@ public class UsuarioRepository : IUsuarioRepository
         await _context.SaveChangesAsync();
         return usuario;
     }
+
+    public async Task<Usuario?> ObtenerParaActualizarAsync(int id)
+    {
+        return await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == id);
+    }
+
+    public async Task ActualizarPasswordHashAsync(Usuario usuario, string passwordHash)
+    {
+        // Solo se modifica la columna PasswordHash; el resto de datos del usuario no cambia.
+        usuario.PasswordHash = passwordHash;
+        _context.Entry(usuario).Property(u => u.PasswordHash).IsModified = true;
+        await _context.SaveChangesAsync();
+    }
 }
