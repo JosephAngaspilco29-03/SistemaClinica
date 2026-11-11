@@ -1,0 +1,323 @@
+<div class="page-container">
+
+  <!-- ════════════════════════════════════════════════════════════
+       VISTA: LISTA DE PACIENTES
+  ════════════════════════════════════════════════════════════ -->
+  @if (vista() === 'lista') {
+    <section class="page-header">
+      <div class="header-content">
+        <h1 class="page-title">
+          <span class="material-icons-outlined header-icon">history_edu</span>
+          Historial clínico de pacientes
+        </h1>
+        <p class="page-subtitle">
+          Consulta el historial de los pacientes con los que tienes citas registradas.
+        </p>
+      </div>
+    </section>
+
+    <!-- Buscador -->
+    <div class="search-bar-wrap">
+      <div class="search-bar">
+        <span class="material-icons-outlined search-icon">search</span>
+        <input
+          id="busqueda-paciente"
+          type="text"
+          class="search-input"
+          placeholder="Buscar por nombre o documento..."
+          [value]="busqueda()"
+          (input)="onBusqueda($event)"
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <section class="content-section">
+      @if (loadingPacientes()) {
+        <div class="state-container">
+          <div class="spinner"></div>
+          <p>Cargando pacientes...</p>
+        </div>
+      } @else if (errorPacientes()) {
+        <div class="state-container error-state">
+          <span class="material-icons-outlined icon-lg">error_outline</span>
+          <h3>No se pudo cargar la lista de pacientes.</h3>
+          <button class="btn btn-outline" (click)="cargarPacientes()">Reintentar</button>
+        </div>
+      } @else if (pacientes().length === 0) {
+        <div class="state-container empty-state">
+          <span class="material-icons-outlined icon-lg">person_search</span>
+          <h3>Sin pacientes registrados</h3>
+          <p>Aún no tienes citas registradas con ningún paciente.</p>
+        </div>
+      } @else if (pacientesFiltrados().length === 0) {
+        <div class="state-container empty-state">
+          <span class="material-icons-outlined icon-lg">search_off</span>
+          <h3>Sin resultados</h3>
+          <p>Ningún paciente coincide con tu búsqueda.</p>
+        </div>
+      } @else {
+        <div class="pacientes-grid">
+          @for (p of pacientesFiltrados(); track p.id) {
+            <button
+              class="paciente-card"
+              id="paciente-card-{{ p.id }}"
+              (click)="seleccionarPaciente(p)"
+              type="button"
+            >
+              <div class="pac-avatar">
+                <span class="material-icons-outlined">person</span>
+              </div>
+              <div class="pac-info">
+                <span class="pac-nombre">{{ p.nombreCompleto }}</span>
+                <span class="pac-doc">
+                  <span class="material-icons-outlined">badge</span>
+                  {{ p.documentoIdentidad }}
+                </span>
+              </div>
+              <span class="material-icons-outlined arrow-icon">chevron_right</span>
+            </button>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  <!-- ════════════════════════════════════════════════════════════
+       VISTA: HISTORIAL DEL PACIENTE SELECCIONADO
+  ════════════════════════════════════════════════════════════ -->
+  @if (vista() === 'historial') {
+    <!-- Sub-header con botón volver -->
+    <section class="page-header historial-header">
+      <button class="btn-back" (click)="volverALista()" id="btn-volver-lista">
+        <span class="material-icons-outlined">arrow_back</span>
+        Volver a pacientes
+      </button>
+      <div class="header-content">
+        <h1 class="page-title">Historial clínico</h1>
+        <p class="page-subtitle">
+          Paciente: <strong>{{ pacienteSeleccionado()?.nombreCompleto }}</strong>
+        </p>
+      </div>
+    </section>
+
+    <section class="content-section">
+      @if (loadingHistorial()) {
+        <div class="state-container">
+          <div class="spinner"></div>
+          <p>Cargando historial...</p>
+        </div>
+      } @else if (errorHistorial()) {
+        <div class="state-container error-state">
+          <span class="material-icons-outlined icon-lg">lock</span>
+          <h3>Acceso restringido</h3>
+          <p>{{ errorHistorial() }}</p>
+          <button class="btn btn-outline" (click)="volverALista()">Volver</button>
+        </div>
+      } @else if (atenciones().length === 0) {
+        <div class="state-container empty-state">
+          <span class="material-icons-outlined icon-lg">assignment</span>
+          <h3>Sin atenciones registradas</h3>
+          <p>Este paciente aún no tiene atenciones médicas en el sistema.</p>
+        </div>
+      } @else {
+        <!-- Info del paciente -->
+        <div class="paciente-info-card">
+          <div class="info-group">
+            <span class="label">Paciente</span>
+            <span class="value">{{ historial()?.pacienteNombre }}</span>
+          </div>
+          <div class="info-group">
+            <span class="label">Documento</span>
+            <span class="value">{{ historial()?.documentoIdentidad }}</span>
+          </div>
+          <div class="info-group">
+            <span class="label">Sexo</span>
+            <span class="value">{{ historial()?.sexo }}</span>
+          </div>
+          <div class="info-group">
+            <span class="label">Fecha Nac.</span>
+            <span class="value">{{ historial()?.fechaNacimiento | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="info-group">
+            <span class="label">Edad</span>
+            <span class="value">{{ calcularEdad(historial()!.fechaNacimiento) }} años</span>
+          </div>
+          <div class="info-group">
+            <span class="label">Atenciones</span>
+            <span class="value badge-count">{{ atenciones().length }}</span>
+          </div>
+        </div>
+
+        <!-- Timeline de atenciones -->
+        <div class="timeline">
+          @for (atencion of atenciones(); track atencion.atencionMedicaId) {
+            <div class="timeline-item">
+              <div class="timeline-marker"></div>
+
+              <div class="atencion-card" [class.expanded]="isExpanded(atencion.atencionMedicaId)">
+                <!-- Header (siempre visible) -->
+                <div class="atencion-header" (click)="toggleCard(atencion.atencionMedicaId)">
+                  <div class="header-top">
+                    <div class="header-meta">
+                      <div class="date-badge">
+                        <span class="material-icons-outlined">event</span>
+                        {{ atencion.fechaAtencion | date:'dd/MM/yyyy' }}
+                      </div>
+                      @if (atencion.especialidadNombre) {
+                        <span class="esp-badge">{{ atencion.especialidadNombre }}</span>
+                      }
+                      @if (atencion.medicoNombre) {
+                        <span class="medico-badge">
+                          <span class="material-icons-outlined">medical_services</span>
+                          Dr. {{ atencion.medicoNombre }}
+                        </span>
+                      }
+                    </div>
+                    <button class="expand-btn" type="button"
+                      [attr.aria-expanded]="isExpanded(atencion.atencionMedicaId)">
+                      <span>{{ isExpanded(atencion.atencionMedicaId) ? 'Ver menos' : 'Ver detalle' }}</span>
+                      <span class="material-icons-outlined">
+                        {{ isExpanded(atencion.atencionMedicaId) ? 'expand_less' : 'expand_more' }}
+                      </span>
+                    </button>
+                  </div>
+
+                  <!-- Motivo + diagnóstico principal siempre visible -->
+                  <div class="header-summary">
+                    <div class="info-row">
+                      <span class="label">Motivo:</span>
+                      <span class="value">{{ atencion.motivoConsulta }}</span>
+                    </div>
+                    @if (getDiagnosticoPrincipal(atencion); as diag) {
+                      <div class="diag-principal">
+                        <span class="badge badge-dx">Principal</span>
+                        <span class="cie10">{{ diag.codigoCie10 }}</span>
+                        <span class="desc">{{ diag.descripcion }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Body expandible -->
+                @if (isExpanded(atencion.atencionMedicaId)) {
+                  <div class="atencion-body">
+
+                    <!-- TRIAJE (si existe) -->
+                    @if (atencion.triaje) {
+                      <div class="section-block triaje-block">
+                        <h4 class="section-title">
+                          <span class="material-icons-outlined">monitor_heart</span>
+                          Triaje al momento de la cita
+                        </h4>
+                        <div class="triaje-grid">
+                          <div class="triaje-item">
+                            <span class="ti-label">Presión arterial</span>
+                            <span class="ti-value">
+                              {{ atencion.triaje.presionSistolica }} / {{ atencion.triaje.presionDiastolica }}
+                              <small>mmHg</small>
+                            </span>
+                          </div>
+                          <div class="triaje-item">
+                            <span class="ti-label">Frec. cardíaca</span>
+                            <span class="ti-value">
+                              {{ atencion.triaje.frecuenciaCardiaca }}
+                              <small>lpm</small>
+                            </span>
+                          </div>
+                          <div class="triaje-item">
+                            <span class="ti-label">Temperatura</span>
+                            <span class="ti-value">
+                              {{ atencion.triaje.temperatura }}
+                              <small>°C</small>
+                            </span>
+                          </div>
+                          <div class="triaje-item">
+                            <span class="ti-label">Peso</span>
+                            <span class="ti-value">
+                              {{ atencion.triaje.peso }}
+                              <small>kg</small>
+                            </span>
+                          </div>
+                          <div class="triaje-item">
+                            <span class="ti-label">Talla</span>
+                            <span class="ti-value">
+                              {{ atencion.triaje.talla }}
+                              <small>m</small>
+                            </span>
+                          </div>
+                          <div class="triaje-item">
+                            <span class="ti-label">IMC</span>
+                            <span class="ti-value imc-value" [ngClass]="getImcClass(atencion.triaje.imc)">
+                              {{ atencion.triaje.imc }}
+                              <small>({{ getImcLabel(atencion.triaje.imc) }})</small>
+                            </span>
+                          </div>
+                          @if (atencion.triaje.observaciones) {
+                            <div class="triaje-item full-col">
+                              <span class="ti-label">Obs. triaje</span>
+                              <span class="ti-value">{{ atencion.triaje.observaciones }}</span>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+
+                    <!-- ANAMNESIS -->
+                    @if (atencion.anamnesis) {
+                      <div class="section-block">
+                        <h4>Anamnesis</h4>
+                        <p>{{ atencion.anamnesis }}</p>
+                      </div>
+                    }
+
+                    <!-- EXAMEN FÍSICO -->
+                    @if (atencion.examenFisico) {
+                      <div class="section-block">
+                        <h4>Examen físico</h4>
+                        <p>{{ atencion.examenFisico }}</p>
+                      </div>
+                    }
+
+                    <!-- INDICACIONES + OBSERVACIONES -->
+                    <div class="row-blocks">
+                      @if (atencion.indicaciones) {
+                        <div class="section-block half">
+                          <h4>Indicaciones</h4>
+                          <p>{{ atencion.indicaciones }}</p>
+                        </div>
+                      }
+                      @if (atencion.observaciones) {
+                        <div class="section-block half">
+                          <h4>Observaciones</h4>
+                          <p>{{ atencion.observaciones }}</p>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- OTROS DIAGNÓSTICOS -->
+                    @if (getOtrosDiagnosticos(atencion).length > 0) {
+                      <div class="section-block">
+                        <h4>Otros diagnósticos CIE-10</h4>
+                        <div class="diagnosticos-list">
+                          @for (diag of getOtrosDiagnosticos(atencion); track diag.id) {
+                            <div class="diag-item">
+                              <span class="cie10">{{ diag.codigoCie10 }}</span>
+                              <span class="desc">{{ diag.descripcion }}</span>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+
+</div>

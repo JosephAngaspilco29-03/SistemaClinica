@@ -1,0 +1,100 @@
+<div class="page-container">
+  <section class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Mi agenda</h1>
+      <p class="page-subtitle">Consulta tus citas programadas y el estado de cada atención.</p>
+    </div>
+  </section>
+
+  <section class="content-section">
+    @if (loading()) {
+      <div class="state-container loading-state">
+        <div class="spinner"></div>
+        <p>Cargando tu agenda...</p>
+      </div>
+    } @else if (error()) {
+      <div class="state-container error-state">
+        <span class="material-icons-outlined error-icon">error_outline</span>
+        <h3>Ocurrió un problema</h3>
+        <p>No se pudo cargar tu agenda.</p>
+        <button class="btn btn-outline" (click)="cargarAgenda()">
+          Reintentar
+        </button>
+      </div>
+    } @else {
+      <!-- Resumen -->
+      <div class="resumen-grid">
+        <div class="resumen-card bg-primary-light">
+          <div class="resumen-valor">{{ citasProximas() }}</div>
+          <div class="resumen-label">Citas próximas</div>
+        </div>
+        <div class="resumen-card bg-success-light">
+          <div class="resumen-valor">{{ citasAtendidas() }}</div>
+          <div class="resumen-label">Atendidas</div>
+        </div>
+        <div class="resumen-card bg-danger-light">
+          <div class="resumen-valor">{{ citasCanceladas() }}</div>
+          <div class="resumen-label">Canceladas</div>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="filtros-container">
+        <button class="filtro-btn" [class.active]="filtroActual() === 'Todas'" (click)="cambiarFiltro('Todas')">Todas</button>
+        <button class="filtro-btn" [class.active]="filtroActual() === 'Proximas'" (click)="cambiarFiltro('Proximas')">Próximas</button>
+        <button class="filtro-btn" [class.active]="filtroActual() === 'Atendidas'" (click)="cambiarFiltro('Atendidas')">Atendidas</button>
+        <button class="filtro-btn" [class.active]="filtroActual() === 'Canceladas'" (click)="cambiarFiltro('Canceladas')">Canceladas</button>
+      </div>
+
+      <!-- Citas -->
+      @if (citasAgrupadas().length === 0) {
+        <div class="state-container empty-state">
+          <span class="material-icons-outlined empty-icon">event_available</span>
+          <h3>No tienes citas registradas.</h3>
+          <p>Cuando un paciente reserve uno de tus horarios, la cita aparecerá aquí.</p>
+        </div>
+      } @else {
+        <div class="agenda-list">
+          @for (grupo of citasAgrupadas(); track grupo.fecha) {
+            <div class="fecha-grupo">
+              <h3 class="fecha-header">{{ grupo.fechaString | uppercase }}</h3>
+              
+              <div class="citas-grid">
+                @for (cita of grupo.citas; track cita.id) {
+                  <div class="cita-card card">
+                    <div class="cita-header">
+                      <span class="cita-time">
+                        <span class="material-icons-outlined">schedule</span>
+                        {{ formatTimeUi(cita.fechaHora) }}
+                      </span>
+                      <span class="badge" [ngClass]="getEstadoClass(cita.estado)">
+                        {{ cita.estado }}
+                      </span>
+                    </div>
+                    
+                    <div class="cita-body">
+                      <div class="info-row">
+                        <span class="label">Paciente:</span>
+                        <span class="value paciente-nombre">{{ cita.pacienteNombre }}</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="label">Especialidad:</span>
+                        <span class="value">{{ cita.especialidadNombre }}</span>
+                      </div>
+                      @if (cita.motivoConsulta) {
+                        <div class="info-row mt-2">
+                          <span class="label">Motivo:</span>
+                          <span class="value motivo">{{ cita.motivoConsulta }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  </section>
+</div>

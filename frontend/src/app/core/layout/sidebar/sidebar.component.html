@@ -1,0 +1,24 @@
+<aside class="sidebar-container">
+  <div class="logo-area">
+    <span class="material-icons-outlined logo-icon">local_hospital</span>
+    <h1 class="logo-text">SistemaClinica</h1>
+  </div>
+  
+  <nav class="nav-menu">
+    <ul>
+      @for (item of navItems(); track item.route) {
+        <li>
+          <a [routerLink]="item.disabled ? null : item.route" 
+             routerLinkActive="active" 
+             [routerLinkActiveOptions]="{exact: true}"
+             class="nav-link"
+             [class.disabled-link]="item.disabled"
+             [attr.title]="item.disabled ? 'Próximamente' : null">
+            <span class="material-icons-outlined nav-icon">{{ item.icon }}</span>
+            <span class="nav-label">{{ item.label }}</span>
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+</aside>

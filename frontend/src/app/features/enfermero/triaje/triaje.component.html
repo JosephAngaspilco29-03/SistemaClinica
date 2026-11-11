@@ -1,0 +1,278 @@
+<div class="page-container">
+  <section class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Triaje</h1>
+      <p class="page-subtitle">Registra y consulta los signos vitales de los pacientes antes de su atención médica.</p>
+    </div>
+  </section>
+
+  @if (mensajeExito()) {
+    <div class="toast-success">
+      <span class="material-icons-outlined">check_circle</span>
+      {{ mensajeExito() }}
+    </div>
+  }
+
+  <section class="content-section">
+    @if (loading()) {
+      <div class="state-container loading-state">
+        <div class="spinner"></div>
+        <p>Cargando citas para triaje...</p>
+      </div>
+    } @else if (error()) {
+      <div class="state-container error-state">
+        <span class="material-icons-outlined error-icon">error_outline</span>
+        <h3>Ocurrió un problema</h3>
+        <p>No se pudieron cargar las citas para triaje.</p>
+        <button class="btn btn-outline" (click)="cargarDatos()">Reintentar</button>
+      </div>
+    } @else {
+      <!-- Filtros -->
+      <div class="filtros-container">
+        <button class="filtro-btn" [class.active]="filtroActual() === 'Todas'" (click)="cambiarFiltro('Todas')">Todas</button>
+        <button class="filtro-btn" [class.active]="filtroActual() === 'Pendientes'" (click)="cambiarFiltro('Pendientes')">Pendientes de triaje</button>
+        <button class="filtro-btn" [class.active]="filtroActual() === 'Con triaje'" (click)="cambiarFiltro('Con triaje')">Con triaje</button>
+      </div>
+
+      <!-- Grid -->
+      @if (citasFiltradas().length === 0) {
+        <div class="state-container empty-state">
+          <span class="material-icons-outlined empty-icon">monitor_heart</span>
+          @if (filtroActual() === 'Pendientes') {
+            <h3>No hay triajes pendientes.</h3>
+          } @else {
+            <h3>No hay citas disponibles para triaje.</h3>
+            <p>Las citas de los pacientes aparecerán aquí cuando estén disponibles.</p>
+          }
+        </div>
+      } @else {
+        <div class="citas-grid">
+          @for (cita of citasFiltradas(); track cita.id) {
+            <div class="cita-card card" [class.disabled]="cita.estado === 'Cancelada'">
+              <div class="cita-header">
+                <div class="cita-date">
+                  <span class="material-icons-outlined">event</span>
+                  {{ getFechaFormateada(cita.fechaHora) }}
+                </div>
+                <div class="cita-time">
+                  <span class="material-icons-outlined">schedule</span>
+                  {{ formatTimeUi(cita.fechaHora) }}
+                </div>
+              </div>
+
+              <div class="cita-body">
+                <div class="info-row">
+                  <span class="label">Paciente:</span>
+                  <span class="value paciente-nombre">{{ cita.pacienteNombre }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Médico:</span>
+                  <span class="value">{{ cita.medicoNombre }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Especialidad:</span>
+                  <span class="value">{{ cita.especialidadNombre }}</span>
+                </div>
+                @if (cita.motivoConsulta) {
+                  <div class="info-row mt-2">
+                    <span class="label">Motivo:</span>
+                    <span class="value motivo">{{ cita.motivoConsulta }}</span>
+                  </div>
+                }
+              </div>
+
+              <div class="cita-footer">
+                <div class="estados">
+                  <span class="badge" [ngClass]="getEstadoClass(cita.estado)">{{ cita.estado }}</span>
+                  
+                  @if (cita.estadoTriaje === 'REGISTRADO') {
+                    <span class="badge badge-success">TRIAJE REGISTRADO</span>
+                  } @else if (cita.estado === 'Cancelada' || cita.estado === 'Atendida') {
+                    <span class="badge badge-secondary">NO APLICA</span>
+                  } @else if (!esCitaDeHoy(cita.fechaHora)) {
+                    <span class="badge badge-warning">TRIAJE PENDIENTE</span>
+                    <span class="text-xs text-muted" style="margin-left: 0.5rem;">Disponible el {{ getFechaCorta(cita.fechaHora) }}</span>
+                  } @else {
+                    <span class="badge badge-warning">TRIAJE PENDIENTE</span>
+                  }
+                </div>
+
+                <div class="actions">
+                  @if (cita.estadoTriaje === 'REGISTRADO') {
+                    <button class="btn btn-outline btn-sm" (click)="abrirModal(cita)">
+                      Ver / Editar triaje
+                    </button>
+                  } @else if ((cita.estado === 'Reservada' || cita.estado === 'Reprogramada') && esCitaDeHoy(cita.fechaHora)) {
+                    <button class="btn btn-primary btn-sm" (click)="abrirModal(cita)">
+                      Registrar triaje
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  </section>
+
+  <!-- Modal -->
+  @if (showModal() && selectedCita()) {
+    <div class="modal-overlay">
+      <div class="modal-content modal-lg">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <span class="material-icons-outlined title-icon">{{ selectedCita()?.triaje ? 'edit_document' : 'monitor_heart' }}</span>
+            <div>
+              <h2>{{ selectedCita()?.triaje ? 'Editar triaje' : 'Registrar triaje' }}</h2>
+              <p class="modal-subtitle">
+                {{ selectedCita()?.triaje ? 'Actualiza los signos vitales registrados para este paciente.' : 'Registra los signos vitales del paciente antes de su atención médica.' }}
+              </p>
+            </div>
+          </div>
+          <button class="close-btn" (click)="cerrarModal()" [disabled]="guardando()">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="paciente-summary">
+            <div class="summary-col">
+              <span class="summary-label">Paciente</span>
+              <span class="summary-value">{{ selectedCita()?.pacienteNombre }}</span>
+            </div>
+            <div class="summary-col">
+              <span class="summary-label">Cita</span>
+              <span class="summary-value">{{ getFechaCorta(selectedCita()!.fechaHora) }} - {{ formatTimeUi(selectedCita()!.fechaHora) }}</span>
+            </div>
+            <div class="summary-col">
+              <span class="summary-label">Médico</span>
+              <span class="summary-value">{{ selectedCita()?.medicoNombre }}</span>
+            </div>
+            <div class="summary-col">
+              <span class="summary-label">Especialidad</span>
+              <span class="summary-value">{{ selectedCita()?.especialidadNombre }}</span>
+            </div>
+          </div>
+
+          <form [formGroup]="triajeForm" class="triaje-form">
+            <h3 class="section-title">SIGNOS VITALES</h3>
+            
+            <div class="vitals-grid">
+              
+              <!-- Presión Arterial -->
+              <div class="vital-group double-vital">
+                <label>Presión arterial</label>
+                <div class="presion-inputs">
+                  <div class="input-with-unit">
+                    <input type="number" formControlName="presionSistolica" class="form-control" placeholder="Sistólica" />
+                  </div>
+                  <span class="separator">/</span>
+                  <div class="input-with-unit">
+                    <input type="number" formControlName="presionDiastolica" class="form-control" placeholder="Diastólica" />
+                    <span class="unit">mmHg</span>
+                  </div>
+                </div>
+                @if (triajeForm.get('presionSistolica')?.invalid && triajeForm.get('presionSistolica')?.touched) {
+                  <span class="validation-error">Presión sistólica inválida (mayor a 0).</span>
+                }
+                @if (triajeForm.get('presionDiastolica')?.invalid && triajeForm.get('presionDiastolica')?.touched) {
+                  <span class="validation-error">Presión diastólica inválida (mayor a 0).</span>
+                }
+              </div>
+
+              <div class="vital-group">
+                <label>Frecuencia cardíaca</label>
+                <div class="input-with-unit">
+                  <input type="number" formControlName="frecuenciaCardiaca" class="form-control" />
+                  <span class="unit">lpm</span>
+                </div>
+                @if (triajeForm.get('frecuenciaCardiaca')?.invalid && triajeForm.get('frecuenciaCardiaca')?.touched) {
+                  <span class="validation-error">Valor inválido (mayor a 0).</span>
+                }
+              </div>
+
+              <div class="vital-group">
+                <label>Temperatura</label>
+                <div class="input-with-unit">
+                  <input type="number" step="0.1" formControlName="temperatura" class="form-control" />
+                  <span class="unit">°C</span>
+                </div>
+                @if (triajeForm.get('temperatura')?.invalid && triajeForm.get('temperatura')?.touched) {
+                  <span class="validation-error">Valor inválido (mayor a 0).</span>
+                }
+              </div>
+
+              <div class="vital-group">
+                <label>Peso</label>
+                <div class="input-with-unit">
+                  <input type="number" step="0.1" formControlName="peso" class="form-control" />
+                  <span class="unit">kg</span>
+                </div>
+                @if (triajeForm.get('peso')?.invalid && triajeForm.get('peso')?.touched) {
+                  <span class="validation-error">El peso debe ser mayor a 0.</span>
+                }
+              </div>
+
+              <div class="vital-group">
+                <label>Talla</label>
+                <div class="input-with-unit">
+                  <input type="number" step="0.01" formControlName="talla" class="form-control" />
+                  <span class="unit">m</span>
+                </div>
+                @if (triajeForm.get('talla')?.invalid && triajeForm.get('talla')?.touched) {
+                  <span class="validation-error">La talla debe ser mayor a 0.</span>
+                }
+              </div>
+            </div>
+            
+            <h3 class="section-title mt-4">IMC</h3>
+            <div class="imc-section">
+              <div class="imc-content">
+                @if (selectedCita()?.triaje) {
+                  <div class="imc-item">
+                    <span class="imc-label">IMC registrado:</span>
+                    <span class="imc-value">{{ selectedCita()?.triaje?.imc }}</span>
+                  </div>
+                }
+                @if (imcPreview) {
+                  <div class="imc-item">
+                    <span class="imc-label">{{ selectedCita()?.triaje ? 'Nuevo IMC estimado:' : 'IMC estimado:' }}</span>
+                    <span class="imc-value highlight-imc">{{ imcPreview }}</span>
+                  </div>
+                }
+              </div>
+              <p class="imc-help">Calculado automáticamente según peso y talla.</p>
+            </div>
+
+            <h3 class="section-title mt-4">OBSERVACIONES</h3>
+            <div class="form-group full-width">
+              <label>Observaciones (opcional)</label>
+              <textarea formControlName="observaciones" class="form-control observaciones-ta" rows="4" placeholder="Escribe aquí las observaciones..."></textarea>
+            </div>
+          </form>
+
+          @if (errorOperacion()) {
+            <div class="modal-error mt-3">
+              <span class="material-icons-outlined">error</span>
+              {{ errorOperacion() }}
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="cerrarModal()" [disabled]="guardando()">Cancelar</button>
+          
+          <button class="btn btn-primary btn-with-icon" 
+                  [disabled]="triajeForm.invalid || guardando()" 
+                  (click)="guardarTriaje()">
+            @if (guardando()) {
+              <span class="spinner-small"></span> {{ selectedCita()?.triaje ? 'Actualizando...' : 'Enviando...' }}
+            } @else {
+              {{ selectedCita()?.triaje ? 'Actualizar triaje' : 'Registrar triaje' }}
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

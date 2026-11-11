@@ -1,0 +1,225 @@
+<div class="page-container">
+  <!-- Header Section -->
+  <section class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Mis citas</h1>
+      <p class="page-subtitle">Revisa el historial y estado de tus citas programadas.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary btn-with-icon" routerLink="/reservar-cita" title="Reservar una nueva cita">
+        <span class="material-icons-outlined">add</span>
+        Reservar nueva cita
+      </button>
+    </div>
+  </section>
+
+  @if (mensajeExito()) {
+    <div class="toast-success">
+      <span class="material-icons-outlined">check_circle</span>
+      {{ mensajeExito() }}
+    </div>
+  }
+
+  <!-- Content Section -->
+  <section class="content-section">
+    @if (loading()) {
+      <div class="state-container loading-state">
+        <div class="spinner"></div>
+        <p>Cargando tus citas...</p>
+      </div>
+    } @else if (error()) {
+      <div class="state-container error-state">
+        <span class="material-icons-outlined error-icon">error_outline</span>
+        <h3>Ocurrió un problema</h3>
+        <p>No se pudieron cargar tus citas. Intenta nuevamente.</p>
+        <button class="btn btn-outline" (click)="cargarCitas()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (citas().length === 0) {
+      <div class="state-container empty-state">
+        <span class="material-icons-outlined empty-icon">event_busy</span>
+        <h3>No tienes citas</h3>
+        <p>No tienes citas registradas todavía. Cuando reserves una cita, aparecerá aquí.</p>
+      </div>
+    } @else {
+      <div class="citas-grid">
+        @for (cita of citas(); track cita.id) {
+          <div class="cita-card card">
+            <div class="cita-header">
+              <span class="cita-date">
+                <span class="material-icons-outlined">event</span>
+                {{ cita.fechaHora | date:'dd/MM/yyyy' }}
+              </span>
+              <span class="cita-time">
+                <span class="material-icons-outlined">schedule</span>
+                {{ formatTimeUi(cita.fechaHora) }}
+              </span>
+              <span class="badge" [ngClass]="getEstadoClass(cita.estado)">
+                {{ cita.estado }}
+              </span>
+            </div>
+            
+            <div class="cita-body">
+              <div class="info-row">
+                <span class="label">Especialidad:</span>
+                <span class="value">{{ cita.especialidadNombre }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Médico:</span>
+                <span class="value">{{ cita.medicoNombre }}</span>
+              </div>
+              @if (cita.motivoConsulta) {
+                <div class="info-row">
+                  <span class="label">Motivo:</span>
+                  <span class="value motivo">{{ cita.motivoConsulta }}</span>
+                </div>
+              }
+            </div>
+
+            @if (cita.estado === 'Reservada' || cita.estado === 'Reprogramada') {
+              <div class="cita-actions">
+                <button class="btn btn-outline btn-sm" (click)="abrirModalReprogramar(cita)">
+                  Reprogramar
+                </button>
+                <button class="btn btn-outline-danger btn-sm" (click)="abrirModalCancelar(cita)">
+                  Cancelar cita
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- Cancel Modal -->
+  @if (showCancelModal() && selectedCita()) {
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>¿Deseas cancelar esta cita?</h2>
+          <button class="close-btn" (click)="cerrarModalCancelar()" [disabled]="cancelando()">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">Al confirmar, esta cita será anulada y el horario volverá a estar disponible.</p>
+          
+          <div class="cita-summary-card">
+            <div class="info-row"><span class="label">Especialidad</span> <span class="value">{{ selectedCita()?.especialidadNombre }}</span></div>
+            <div class="info-row"><span class="label">Médico</span> <span class="value">{{ selectedCita()?.medicoNombre }}</span></div>
+            <div class="info-row"><span class="label">Fecha</span> <span class="value">{{ selectedCita()?.fechaHora | date:'dd/MM/yyyy' }}</span></div>
+            <div class="info-row"><span class="label">Horario</span> <span class="value">{{ formatTimeUi(selectedCita()?.fechaHora) }}</span></div>
+          </div>
+
+          @if (errorOperacion()) {
+            <div class="modal-error">
+              <span class="material-icons-outlined">error</span>
+              {{ errorOperacion() }}
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="cerrarModalCancelar()" [disabled]="cancelando()">Volver</button>
+          <button class="btn btn-danger btn-with-icon" (click)="confirmarCancelacion()" [disabled]="cancelando()">
+            @if (cancelando()) {
+              <span class="spinner-small"></span> Cancelando...
+            } @else {
+              Cancelar cita
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Reprogramar Modal -->
+  @if (showReprogramarModal() && selectedCita()) {
+    <div class="modal-overlay">
+      <div class="modal-content modal-lg">
+        <div class="modal-header">
+          <h2>Reprogramar cita</h2>
+          <button class="close-btn" (click)="cerrarModalReprogramar()" [disabled]="reprogramando()">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="reprogramar-split">
+            <!-- Columna actual -->
+            <div class="reprogramar-col">
+              <h4>Cita actual</h4>
+              <div class="cita-summary-card">
+                <div class="info-row"><span class="label">Especialidad</span> <span class="value">{{ selectedCita()?.especialidadNombre }}</span></div>
+                <div class="info-row"><span class="label">Médico</span> <span class="value">{{ selectedCita()?.medicoNombre }}</span></div>
+                <div class="info-row"><span class="label">Fecha actual</span> <span class="value">{{ selectedCita()?.fechaHora | date:'dd/MM/yyyy' }}</span></div>
+                <div class="info-row"><span class="label">Horario actual</span> <span class="value">{{ formatTimeUi(selectedCita()?.fechaHora) }}</span></div>
+              </div>
+            </div>
+
+            <div class="reprogramar-icon">
+              <span class="material-icons-outlined">arrow_forward</span>
+            </div>
+
+            <!-- Columna nuevo -->
+            <div class="reprogramar-col">
+              <h4>Nuevo horario</h4>
+              @if (selectedNuevoHorario()) {
+                <div class="cita-summary-card highlight">
+                  <div class="info-row"><span class="label">Especialidad</span> <span class="value">{{ selectedCita()?.especialidadNombre }}</span></div>
+                  <div class="info-row"><span class="label">Médico</span> <span class="value">{{ selectedCita()?.medicoNombre }}</span></div>
+                  <div class="info-row"><span class="label">Nueva Fecha</span> <span class="value">{{ getFechaFormateada(selectedNuevoHorario()!.fecha) }}</span></div>
+                  <div class="info-row"><span class="label">Nuevo Horario</span> <span class="value">{{ formatTimeUi(selectedNuevoHorario()!.horaInicio) }} - {{ formatTimeUi(selectedNuevoHorario()!.horaFin) }}</span></div>
+                </div>
+              } @else {
+                <div class="empty-selection">
+                  Selecciona un horario disponible abajo
+                </div>
+              }
+            </div>
+          </div>
+
+          <h4 class="mt-4">Horarios disponibles</h4>
+          @if (loadingHorarios()) {
+            <div class="horarios-loading">
+              <div class="spinner"></div> Cargando horarios...
+            </div>
+          } @else if (horariosDisponibles().length === 0) {
+            <div class="horarios-empty">No hay horarios disponibles para este médico.</div>
+          } @else {
+            <div class="horarios-grid-small">
+              @for (horario of horariosDisponibles(); track horario.id) {
+                <div class="horario-card-small"
+                     [class.selected]="selectedNuevoHorario()?.id === horario.id"
+                     (click)="!reprogramando() ? seleccionarNuevoHorario(horario) : null">
+                  <div class="hc-date">{{ getFechaFormateada(horario.fecha) }}</div>
+                  <div class="hc-time">{{ formatTimeUi(horario.horaInicio) }} - {{ formatTimeUi(horario.horaFin) }}</div>
+                  <div class="hc-cupos">{{ horario.cuposDisponibles }} cupos</div>
+                </div>
+              }
+            </div>
+          }
+
+          @if (errorOperacion()) {
+            <div class="modal-error mt-4">
+              <span class="material-icons-outlined">error</span>
+              {{ errorOperacion() }}
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="cerrarModalReprogramar()" [disabled]="reprogramando()">Volver</button>
+          <button class="btn btn-primary btn-with-icon" 
+                  [disabled]="!selectedNuevoHorario() || reprogramando()" 
+                  (click)="confirmarReprogramacion()">
+            @if (reprogramando()) {
+              <span class="spinner-small"></span> Reprogramando...
+            } @else {
+              Confirmar reprogramación
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

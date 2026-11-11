@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 500">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="15" stdDeviation="20" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Big circular background -->
+  <circle cx="300" cy="250" r="220" fill="#f0fdf4" />
+  <circle cx="450" cy="150" r="60" fill="#d1fae5" />
+  
+  <!-- Central facility / clinic building abstract -->
+  <rect x="150" y="200" width="300" height="250" rx="16" fill="#ffffff" filter="url(#softShadow)"/>
+  
+  <!-- Roof -->
+  <path d="M 130 200 L 470 200 L 450 150 L 150 150 Z" fill="url(#primaryGrad)"/>
+  
+  <!-- Medical Cross on building -->
+  <rect x="290" y="100" width="20" height="60" rx="4" fill="url(#primaryGrad)"/>
+  <rect x="270" y="120" width="60" height="20" rx="4" fill="url(#primaryGrad)"/>
+  
+  <!-- Windows -->
+  <rect x="180" y="240" width="60" height="80" rx="8" fill="#f1f5f9"/>
+  <rect x="270" y="240" width="60" height="80" rx="8" fill="#f1f5f9"/>
+  <rect x="360" y="240" width="60" height="80" rx="8" fill="#f1f5f9"/>
+  
+  <!-- Door -->
+  <path d="M 270 450 L 270 370 C 270 350 330 350 330 370 L 330 450 Z" fill="#e2e8f0"/>
+  <rect x="298" y="370" width="4" height="80" fill="#ffffff"/>
+  
+  <!-- Trees / Nature -->
+  <circle cx="100" cy="380" r="50" fill="#34d399"/>
+  <circle cx="140" cy="420" r="40" fill="#059669"/>
+  <rect x="90" y="420" width="20" height="40" fill="#78350f"/>
+
+  <circle cx="500" cy="350" r="60" fill="#34d399"/>
+  <circle cx="540" cy="390" r="45" fill="#059669"/>
+  <rect x="490" y="400" width="20" height="50" fill="#78350f"/>
+</svg>

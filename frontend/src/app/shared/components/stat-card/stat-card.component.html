@@ -1,0 +1,23 @@
+<div class="stat-card">
+  <div class="stat-content">
+    <div class="stat-info">
+      <h3 class="stat-title">{{ title }}</h3>
+      <div class="stat-value">{{ value }}</div>
+    </div>
+    <div class="stat-icon-wrapper">
+      <span class="material-icons-outlined stat-icon">{{ icon }}</span>
+    </div>
+  </div>
+  
+  @if (trend) {
+    <div class="stat-footer">
+      <span class="trend-indicator" [ngClass]="trend">
+        <span class="material-icons-outlined trend-icon">
+          {{ trend === 'up' ? 'trending_up' : trend === 'down' ? 'trending_down' : 'remove' }}
+        </span>
+        {{ trendValue }}
+      </span>
+      <span class="trend-text">vs semana anterior</span>
+    </div>
+  }
+</div>

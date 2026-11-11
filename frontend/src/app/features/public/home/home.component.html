@@ -1,0 +1,248 @@
+<div class="public-wrapper">
+  <!-- HEADER PÚBLICO -->
+  <header class="public-header">
+    <div class="container header-container">
+      <div class="logo-area" routerLink="/">
+        <span class="material-icons-outlined logo-icon">local_hospital</span>
+        <span class="logo-text">Sistema<span class="text-primary">Clinica</span></span>
+      </div>
+      
+      <nav class="desktop-nav">
+        <ul>
+          <li><a href="#inicio">Inicio</a></li>
+          <li><a href="#servicios">Servicios</a></li>
+          <li><a href="#especialidades">Especialidades</a></li>
+          <li><a href="#pasos">Cómo funciona</a></li>
+          <li><a href="#nosotros">Nosotros</a></li>
+        </ul>
+      </nav>
+
+      <div class="auth-buttons">
+        <a routerLink="/login" class="btn-text">Iniciar sesión</a>
+        <a routerLink="/registro" class="btn-primary">Registrarse</a>
+      </div>
+
+      <button class="mobile-menu-btn" (click)="toggleMenu()">
+        <span class="material-icons-outlined">{{ isMenuOpen ? 'close' : 'menu' }}</span>
+      </button>
+    </div>
+
+    <!-- Menú Móvil -->
+    <div class="mobile-nav" [class.open]="isMenuOpen">
+      <ul>
+        <li><a href="#inicio" (click)="toggleMenu()">Inicio</a></li>
+        <li><a href="#servicios" (click)="toggleMenu()">Servicios</a></li>
+        <li><a href="#especialidades" (click)="toggleMenu()">Especialidades</a></li>
+        <li><a href="#pasos" (click)="toggleMenu()">Cómo funciona</a></li>
+        <li><a href="#nosotros" (click)="toggleMenu()">Nosotros</a></li>
+        <li class="mobile-auth">
+          <a routerLink="/registro" class="btn-primary" (click)="toggleMenu()">Registrarse</a>
+          <a routerLink="/login" class="btn-outline" (click)="toggleMenu()">Iniciar sesión</a>
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section id="inicio" class="hero-section">
+      <div class="container hero-container">
+        <div class="hero-content">
+          <span class="hero-chip">Plataforma Médica Ambulatoria</span>
+          <h1>Tu salud, más cerca de ti</h1>
+          <p>Gestiona tus citas médicas y accede a una atención organizada, humana y segura desde cualquier lugar.</p>
+          <div class="hero-actions">
+            <a routerLink="/registro" class="btn-primary btn-large">Reservar una cita</a>
+            <a routerLink="/login" class="btn-outline btn-large">Iniciar sesión</a>
+          </div>
+        </div>
+        <div class="hero-image">
+          <img src="/images/hero-medical.svg" alt="Consulta médica humana" />
+        </div>
+      </div>
+    </section>
+
+    <!-- SERVICIOS -->
+    <section id="servicios" class="services-section bg-light">
+      <div class="container">
+        <div class="section-header">
+          <h2>Nuestros Servicios</h2>
+          <p>Herramientas diseñadas para brindarte una atención médica de calidad, sin complicaciones.</p>
+        </div>
+        <div class="services-grid">
+          <div class="service-card">
+            <div class="icon-wrapper">
+              <span class="material-icons-outlined">calendar_month</span>
+            </div>
+            <h3>Citas médicas</h3>
+            <p>Reserva y organiza tus atenciones con total facilidad y flexibilidad.</p>
+          </div>
+          <div class="service-card">
+            <div class="icon-wrapper">
+              <span class="material-icons-outlined">monitor_heart</span>
+            </div>
+            <h3>Triaje estructurado</h3>
+            <p>Registro ordenado de signos vitales para una evaluación clínica precisa.</p>
+          </div>
+          <div class="service-card">
+            <div class="icon-wrapper">
+              <span class="material-icons-outlined">medical_services</span>
+            </div>
+            <h3>Atención médica</h3>
+            <p>Consultas ambulatorias de primer nivel con profesionales dedicados.</p>
+          </div>
+          <div class="service-card">
+            <div class="icon-wrapper">
+              <span class="material-icons-outlined">history_edu</span>
+            </div>
+            <h3>Historial clínico</h3>
+            <p>Acceso seguro y electrónico a todos tus registros y antecedentes médicos.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ESPECIALIDADES -->
+    <section id="especialidades" class="specialties-section">
+      <div class="container">
+        <div class="section-header">
+          <h2>Especialidades Clínicas</h2>
+          <p>Áreas de atención enfocadas en el bienestar integral de nuestros pacientes.</p>
+        </div>
+        <div class="specialties-grid">
+          <div class="specialty-chip">
+            <span class="material-icons-outlined">favorite</span>
+            Cardiología
+          </div>
+          <div class="specialty-chip">
+            <span class="material-icons-outlined">child_care</span>
+            Pediatría
+          </div>
+          <div class="specialty-chip">
+            <span class="material-icons-outlined">psychology</span>
+            Medicina General
+          </div>
+          <div class="specialty-chip">
+            <span class="material-icons-outlined">visibility</span>
+            Oftalmología
+          </div>
+          <div class="specialty-chip">
+            <span class="material-icons-outlined">air</span>
+            Neumología
+          </div>
+          <div class="specialty-chip">
+            <span class="material-icons-outlined">pregnant_woman</span>
+            Ginecología
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CÓMO FUNCIONA -->
+    <section id="pasos" class="steps-section bg-light">
+      <div class="container">
+        <div class="section-header">
+          <h2>Tu atención en pocos pasos</h2>
+          <p>Un flujo claro y organizado pensado en tu comodidad.</p>
+        </div>
+        
+        <div class="steps-wrapper">
+          <div class="step-card">
+            <div class="step-number">1</div>
+            <span class="material-icons-outlined">person_add</span>
+            <h4>Crea tu cuenta</h4>
+            <p>Regístrate en nuestro sistema.</p>
+          </div>
+          <div class="step-connector"></div>
+          
+          <div class="step-card">
+            <div class="step-number">2</div>
+            <span class="material-icons-outlined">edit_calendar</span>
+            <h4>Reserva tu cita</h4>
+            <p>Elige tu especialidad y horario.</p>
+          </div>
+          <div class="step-connector"></div>
+          
+          <div class="step-card">
+            <div class="step-number">3</div>
+            <span class="material-icons-outlined">monitor_heart</span>
+            <h4>Realiza tu triaje</h4>
+            <p>Evaluación inicial de signos vitales.</p>
+          </div>
+          <div class="step-connector"></div>
+          
+          <div class="step-card">
+            <div class="step-number">4</div>
+            <span class="material-icons-outlined">health_and_safety</span>
+            <h4>Recibe atención</h4>
+            <p>Consulta con nuestros médicos.</p>
+          </div>
+          <div class="step-connector"></div>
+          
+          <div class="step-card">
+            <div class="step-number">5</div>
+            <span class="material-icons-outlined">folder_shared</span>
+            <h4>Consulta tu historial</h4>
+            <p>Consulta tus diagnósticos médicos.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NOSOTROS -->
+    <section id="nosotros" class="about-section">
+      <div class="container about-container">
+        <div class="about-image">
+          <img src="/images/about-medical.svg" alt="Instalaciones SistemaClinica" />
+        </div>
+        <div class="about-content">
+          <h2>Sobre SistemaClinica</h2>
+          <p>SistemaClinica es una plataforma integral orientada a centros de salud ambulatorios. Facilitamos la gestión diaria de citas, triaje, atención médica y el mantenimiento riguroso del historial clínico.</p>
+          <p>Nuestro propósito es conectar humanamente a pacientes con profesionales de la salud, ofreciendo una herramienta confiable que optimiza tiempos y respeta estrictamente la privacidad médica de la información.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+      <div class="container cta-container">
+        <h2>Gestiona tu atención médica de forma simple y segura</h2>
+        <div class="cta-actions">
+          <a routerLink="/login" class="btn-white btn-large">Iniciar sesión</a>
+          <a routerLink="/registro" class="btn-outline-white btn-large">Crear una cuenta</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="public-footer">
+    <div class="container footer-top">
+      <div class="footer-brand">
+        <div class="logo-area">
+          <span class="material-icons-outlined logo-icon">local_hospital</span>
+          <span class="logo-text">Sistema<span class="text-primary">Clinica</span></span>
+        </div>
+        <p>Atención médica confiable, organizada y cercana a ti.</p>
+      </div>
+      
+      <div class="footer-links">
+        <h4>Navegación</h4>
+        <ul>
+          <li><a href="#inicio">Inicio</a></li>
+          <li><a href="#servicios">Servicios</a></li>
+          <li><a href="#nosotros">Nosotros</a></li>
+          <li><a routerLink="/login">Iniciar sesión</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-contact">
+        <h4>Contacto</h4>
+        <ul>
+          <li><span class="material-icons-outlined">business</span> Centro de Salud Ambulatorio</li>
+          <li><span class="material-icons-outlined">location_on</span> Trujillo, La Libertad</li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+</div>

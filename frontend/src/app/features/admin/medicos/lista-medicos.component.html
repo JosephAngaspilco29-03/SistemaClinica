@@ -1,0 +1,311 @@
+<div class="page-container">
+
+  <!-- ══════════════════════════════════════════
+       CABECERA
+  ══════════════════════════════════════════ -->
+  <section class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <span class="material-icons-outlined header-icon">medical_services</span>
+        Gestión de Médicos
+      </h1>
+      <p class="page-subtitle">
+        Consulta el directorio de médicos registrados en el sistema.
+      </p>
+      <button type="button" id="btn-nuevo-medico" class="btn btn-primary btn-nuevo" (click)="abrirFormulario()">
+        <span class="material-icons-outlined">add</span>
+        Registrar nuevo médico
+      </button>
+    </div>
+
+    <!-- Tarjetas de resumen -->
+    @if (!cargando() && !error()) {
+      <div class="stats-row">
+        <div class="stat-card stat-total">
+          <span class="material-icons-outlined">group</span>
+          <div class="stat-info">
+            <span class="stat-value">{{ medicos().length }}</span>
+            <span class="stat-label">Total</span>
+          </div>
+        </div>
+        <div class="stat-card stat-activos">
+          <span class="material-icons-outlined">check_circle</span>
+          <div class="stat-info">
+            <span class="stat-value">{{ totalActivos() }}</span>
+            <span class="stat-label">Activos</span>
+          </div>
+        </div>
+        <div class="stat-card stat-inactivos">
+          <span class="material-icons-outlined">cancel</span>
+          <div class="stat-info">
+            <span class="stat-value">{{ totalInactivos() }}</span>
+            <span class="stat-label">Inactivos</span>
+          </div>
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       BUSCADOR
+  ══════════════════════════════════════════ -->
+  <div class="toolbar">
+    <div class="search-bar">
+      <span class="material-icons-outlined search-icon">search</span>
+      <input
+        id="busqueda-medico"
+        type="text"
+        class="search-input"
+        placeholder="Buscar por nombre, CMP, especialidad o email..."
+        [value]="busqueda()"
+        (input)="onBusqueda($event)"
+        autocomplete="off"
+      />
+      @if (busqueda()) {
+        <button class="clear-btn" (click)="limpiarBusqueda()" title="Limpiar búsqueda">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      }
+    </div>
+
+    @if (!cargando() && !error()) {
+      <span class="result-count">
+        {{ medicosFiltrados().length }} de {{ medicos().length }} médicos
+      </span>
+    }
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       ESTADOS
+  ══════════════════════════════════════════ -->
+  @if (cargando()) {
+    <div class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Cargando médicos...</p>
+    </div>
+  } @else if (error()) {
+    <div class="state-container error-state">
+      <span class="material-icons-outlined state-icon">error_outline</span>
+      <h3 class="state-title">No se pudo cargar la lista</h3>
+      <p class="state-text">{{ error() }}</p>
+      <button class="btn btn-outline" (click)="cargarMedicos()">
+        <span class="material-icons-outlined">refresh</span>
+        Reintentar
+      </button>
+    </div>
+  } @else if (medicos().length === 0) {
+    <div class="state-container empty-state">
+      <span class="material-icons-outlined state-icon">person_search</span>
+      <h3 class="state-title">Sin médicos registrados</h3>
+      <p class="state-text">No hay médicos en el sistema todavía.</p>
+    </div>
+  } @else if (medicosFiltrados().length === 0) {
+    <div class="state-container empty-state">
+      <span class="material-icons-outlined state-icon">search_off</span>
+      <h3 class="state-title">Sin resultados</h3>
+      <p class="state-text">
+        Ningún médico coincide con "<strong>{{ busqueda() }}</strong>".
+      </p>
+      <button class="btn btn-ghost" (click)="limpiarBusqueda()">Limpiar búsqueda</button>
+    </div>
+  } @else {
+
+    <!-- ══════════════════════════════════════════
+         TABLA DE MÉDICOS
+    ══════════════════════════════════════════ -->
+    <div class="table-wrapper">
+      <table class="medicos-table" aria-label="Listado de médicos">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Médico</th>
+            <th scope="col">CMP</th>
+            <th scope="col">Especialidades</th>
+            <th scope="col">Teléfono</th>
+            <th scope="col">Email</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (medico of medicosFiltrados(); track medico.id; let i = $index) {
+            <tr class="table-row" [class.row-inactivo]="!medico.activo">
+              <td class="cell-id">{{ i + 1 }}</td>
+
+              <td class="cell-nombre">
+                <div class="nombre-wrap">
+                  <div class="avatar avatar-medico">
+                    {{ iniciales(medico) }}
+                  </div>
+                  <span class="nombre-completo">
+                    Dr. {{ medico.nombres }} {{ medico.apellidos }}
+                  </span>
+                </div>
+              </td>
+
+              <td class="cell-cmp">
+                <span class="cmp-badge">{{ medico.numeroColegiatura }}</span>
+              </td>
+
+              <td class="cell-especialidades">
+                @if (medico.especialidades.length === 0) {
+                  <span class="sin-esp">—</span>
+                } @else {
+                  <div class="esp-chips">
+                    @for (esp of medico.especialidades; track esp.id) {
+                      <span class="esp-chip">{{ esp.nombre }}</span>
+                    }
+                  </div>
+                }
+              </td>
+
+              <td class="cell-tel">{{ medico.telefono || '—' }}</td>
+              <td class="cell-email">{{ medico.email || '—' }}</td>
+
+              <td class="cell-estado">
+                <span class="estado-badge"
+                      [class.badge-activo]="medico.activo"
+                      [class.badge-inactivo]="!medico.activo">
+                  <span class="badge-dot"></span>
+                  {{ medico.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+
+              <td class="cell-acciones">
+                <div class="acciones-wrap">
+                  <button type="button" class="btn btn-ghost btn-editar" (click)="abrirFormulario(medico)"
+                          [attr.aria-label]="'Editar médico ' + medico.nombres + ' ' + medico.apellidos">
+                    <span class="material-icons-outlined">edit</span>
+                    Editar
+                  </button>
+                  <button type="button"
+                          class="btn btn-ghost"
+                          [class.btn-desactivar]="medico.activo"
+                          [class.btn-activar]="!medico.activo"
+                          (click)="solicitarCambioEstado(medico)"
+                          [attr.aria-label]="(medico.activo ? 'Desactivar' : 'Activar') + ' médico ' + medico.nombres + ' ' + medico.apellidos">
+                    <span class="material-icons-outlined">{{ medico.activo ? 'person_off' : 'person_add_alt' }}</span>
+                    {{ medico.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (toast(); as t) {
+    <div class="toast" [class.toast-exito]="t.tipo === 'exito'" [class.toast-error]="t.tipo === 'error'" role="status">
+      <span class="material-icons-outlined">{{ t.tipo === 'exito' ? 'check_circle' : 'error_outline' }}</span>
+      {{ t.mensaje }}
+    </div>
+  }
+
+  @if (mostrarFormulario()) {
+    <div class="modal-backdrop" (click)="cerrarFormulario()">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="titulo-form-medico" (click)="$event.stopPropagation()">
+        <h2 id="titulo-form-medico" class="modal-title">{{ medicoEditando() ? 'Editar médico' : 'Registrar nuevo médico' }}</h2>
+
+        <form [formGroup]="form" (ngSubmit)="guardarMedico()" novalidate>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="f-nombres">Nombres *</label>
+              <input id="f-nombres" type="text" formControlName="nombres" maxlength="100" />
+              @if (campoInvalido('nombres')) { <small class="field-error">Los nombres son obligatorios.</small> }
+            </div>
+
+            <div class="form-field">
+              <label for="f-apellidos">Apellidos *</label>
+              <input id="f-apellidos" type="text" formControlName="apellidos" maxlength="100" />
+              @if (campoInvalido('apellidos')) { <small class="field-error">Los apellidos son obligatorios.</small> }
+            </div>
+
+            <div class="form-field">
+              <label for="f-cmp">N.º de colegiatura (CMP) *</label>
+              <input id="f-cmp" type="text" formControlName="numeroColegiatura" maxlength="30" />
+              @if (campoInvalido('numeroColegiatura')) { <small class="field-error">El número de colegiatura es obligatorio.</small> }
+            </div>
+
+            <div class="form-field">
+              <label for="f-telefono">Teléfono</label>
+              <input id="f-telefono" type="text" formControlName="telefono" maxlength="20" />
+            </div>
+
+            <div class="form-field form-field-full">
+              <label for="f-email">Correo electrónico *</label>
+              <input id="f-email" type="email" formControlName="email" maxlength="150" />
+              @if (campoInvalido('email')) {
+                <small class="field-error">
+                  {{ form.controls.email.hasError('required') ? 'El correo es obligatorio.' : 'Ingrese un correo válido.' }}
+                </small>
+              }
+            </div>
+
+            <div class="form-field form-field-full">
+              <label>Especialidades *</label>
+              @if (cargandoEsp()) {
+                <small>Cargando especialidades...</small>
+              } @else {
+                <div class="esp-selector">
+                  @for (esp of especialidadesDisponibles(); track esp.id) {
+                    <label class="esp-option" [class.selected]="esSeleccionada(esp.id)">
+                      <input type="checkbox" [checked]="esSeleccionada(esp.id)" (change)="toggleEspecialidad(esp.id)" />
+                      {{ esp.nombre }}
+                    </label>
+                  }
+                </div>
+              }
+              @if (campoInvalido('especialidadIds')) { <small class="field-error">Seleccione al menos una especialidad.</small> }
+            </div>
+          </div>
+
+          @if (errorServidor(); as msg) {
+            <div class="form-error-server" role="alert">{{ msg }}</div>
+          }
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" (click)="cerrarFormulario()" [disabled]="guardando()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="guardando()">
+              {{ guardando() ? 'Guardando...' : (medicoEditando() ? 'Guardar cambios' : 'Guardar médico') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  @if (medicoConfirmandoEstado(); as med) {
+    <div class="modal-backdrop" (click)="cancelarCambioEstado()">
+      <div class="modal-card modal-confirm" role="dialog" aria-modal="true" aria-labelledby="titulo-confirm-estado" (click)="$event.stopPropagation()">
+        <h2 id="titulo-confirm-estado" class="modal-title">
+          {{ med.activo ? 'Desactivar médico' : 'Activar médico' }}
+        </h2>
+        <p class="confirm-text">
+          ¿Está seguro de que desea {{ med.activo ? 'desactivar' : 'activar' }} al médico
+          <strong>Dr. {{ med.nombres }} {{ med.apellidos }}</strong>?
+        </p>
+        @if (med.activo) {
+          <p class="confirm-subtext">
+            El médico dejará de aparecer disponible para nuevas reservas de citas, pero se conservarán sus citas, horarios e historial clínico.
+          </p>
+        }
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" (click)="cancelarCambioEstado()" [disabled]="procesandoEstado()">
+            Cancelar
+          </button>
+          <button type="button"
+                  class="btn"
+                  [class.btn-danger]="med.activo"
+                  [class.btn-primary]="!med.activo"
+                  (click)="confirmarCambioEstado()"
+                  [disabled]="procesandoEstado()">
+            {{ procesandoEstado() ? 'Procesando...' : (med.activo ? 'Sí, desactivar' : 'Sí, activar') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

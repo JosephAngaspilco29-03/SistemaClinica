@@ -1,0 +1,282 @@
+<div class="page-container">
+  <!-- Header -->
+  <section class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Reservar nueva cita</h1>
+      <p class="page-subtitle">Sigue los pasos para programar tu consulta médica.</p>
+    </div>
+  </section>
+
+  <!-- Stepper Navigation -->
+  <div class="stepper-nav">
+    <div class="step" [class.active]="currentStep() === 1" [class.completed]="currentStep() > 1" (click)="goToStep(1)">
+      <div class="step-number">1</div>
+      <div class="step-label">Especialidad</div>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step" [class.active]="currentStep() === 2" [class.completed]="currentStep() > 2" (click)="goToStep(2)" [class.disabled]="!selectedEspecialidad()">
+      <div class="step-number">2</div>
+      <div class="step-label">Médico</div>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step" [class.active]="currentStep() === 3" [class.completed]="currentStep() > 3" (click)="goToStep(3)" [class.disabled]="!selectedMedico()">
+      <div class="step-number">3</div>
+      <div class="step-label">Horario</div>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step" [class.active]="currentStep() === 4" (click)="goToStep(4)" [class.disabled]="!selectedHorario()">
+      <div class="step-number">4</div>
+      <div class="step-label">Resumen</div>
+    </div>
+  </div>
+
+  <!-- Wizard Content -->
+  <div class="wizard-content">
+
+    <!-- STEP 1: ESPECIALIDAD -->
+    @if (currentStep() === 1) {
+      <div class="step-container slide-in">
+        <h2 class="step-title">Selecciona una especialidad</h2>
+        
+        @if (loadingEspecialidades()) {
+          <div class="state-container">
+            <div class="spinner"></div>
+            <p>Cargando especialidades...</p>
+          </div>
+        } @else if (errorEspecialidades()) {
+          <div class="state-container error-state">
+            <span class="material-icons-outlined error-icon">error_outline</span>
+            <p>Error al cargar las especialidades.</p>
+            <button class="btn btn-outline" (click)="cargarEspecialidades()">Reintentar</button>
+          </div>
+        } @else if (especialidadesActivas().length === 0) {
+          <div class="state-container">
+            <span class="material-icons-outlined empty-icon">event_busy</span>
+            <p>No hay especialidades disponibles.</p>
+          </div>
+        } @else {
+          <div class="cards-grid">
+            @for (esp of especialidadesActivas(); track esp.id) {
+              <div class="selectable-card" 
+                   [class.selected]="selectedEspecialidad()?.id === esp.id"
+                   (click)="seleccionarEspecialidad(esp)">
+                <div class="card-icon">
+                  <span class="material-icons-outlined">medical_services</span>
+                </div>
+                <div class="card-info">
+                  <h3 class="card-name">{{ esp.nombre }}</h3>
+                  @if (esp.descripcion) {
+                    <p class="card-desc">{{ esp.descripcion }}</p>
+                  }
+                </div>
+                @if (selectedEspecialidad()?.id === esp.id) {
+                  <span class="material-icons-outlined check-icon">check_circle</span>
+                }
+              </div>
+            }
+          </div>
+          <div class="wizard-actions">
+            <div></div> <!-- Espacio para alinear a la derecha -->
+            <button class="btn btn-primary" [disabled]="!selectedEspecialidad()" (click)="nextStep()">Siguiente paso</button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- STEP 2: MÉDICO -->
+    @if (currentStep() === 2) {
+      <div class="step-container slide-in">
+        <h2 class="step-title">Selecciona un médico</h2>
+        <p class="step-desc">Especialidad: <strong>{{ selectedEspecialidad()?.nombre }}</strong></p>
+        
+        @if (loadingMedicos()) {
+          <div class="state-container">
+            <div class="spinner"></div>
+            <p>Buscando médicos disponibles...</p>
+          </div>
+        } @else if (errorMedicos()) {
+          <div class="state-container error-state">
+            <span class="material-icons-outlined error-icon">error_outline</span>
+            <p>Error al cargar los médicos.</p>
+            <button class="btn btn-outline" (click)="cargarMedicos()">Reintentar</button>
+          </div>
+        } @else if (medicosFiltrados().length === 0) {
+          <div class="state-container">
+            <span class="material-icons-outlined empty-icon">person_off</span>
+            <p>No hay médicos disponibles para esta especialidad.</p>
+          </div>
+        } @else {
+          <div class="cards-grid">
+            @for (medico of medicosFiltrados(); track medico.id) {
+              <div class="selectable-card" 
+                   [class.selected]="selectedMedico()?.id === medico.id"
+                   (click)="seleccionarMedico(medico)">
+                <div class="card-avatar">
+                  {{ medico.nombres.charAt(0) }}{{ medico.apellidos.charAt(0) }}
+                </div>
+                <div class="card-info">
+                  <h3 class="card-name">Dr/a. {{ medico.nombres }} {{ medico.apellidos }}</h3>
+                  @if (medico.numeroColegiatura) {
+                    <p class="card-desc">Colegiatura: {{ medico.numeroColegiatura }}</p>
+                  }
+                </div>
+                @if (selectedMedico()?.id === medico.id) {
+                  <span class="material-icons-outlined check-icon">check_circle</span>
+                }
+              </div>
+            }
+          </div>
+          <div class="wizard-actions">
+            <button class="btn btn-outline" (click)="prevStep()">Volver</button>
+            <button class="btn btn-primary" [disabled]="!selectedMedico()" (click)="nextStep()">Siguiente paso</button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- STEP 3: HORARIO -->
+    @if (currentStep() === 3) {
+      <div class="step-container slide-in">
+        <h2 class="step-title">Selecciona un horario</h2>
+        <p class="step-desc">Médico: <strong>Dr/a. {{ selectedMedico()?.nombres }} {{ selectedMedico()?.apellidos }}</strong></p>
+        
+        @if (loadingHorarios()) {
+          <div class="state-container">
+            <div class="spinner"></div>
+            <p>Buscando horarios disponibles...</p>
+          </div>
+        } @else if (errorHorarios()) {
+          <div class="state-container error-state">
+            <span class="material-icons-outlined error-icon">error_outline</span>
+            <p>Error al cargar los horarios.</p>
+            <button class="btn btn-outline" (click)="cargarHorarios()">Reintentar</button>
+          </div>
+        } @else if (horariosAgrupadosPorFecha().length === 0) {
+          <div class="state-container">
+            <span class="material-icons-outlined empty-icon">event_busy</span>
+            <p>No hay horarios disponibles para este médico.</p>
+          </div>
+        } @else {
+          <div class="horarios-list">
+            @for (grupo of horariosAgrupadosPorFecha(); track grupo.fecha) {
+              <div class="fecha-group">
+                <h4 class="fecha-title">{{ grupo.fechaFormateada }}</h4>
+                <div class="horarios-grid">
+                  @for (horario of grupo.horarios; track horario.id) {
+                    <div class="horario-card" 
+                         [class.selected]="selectedHorario()?.id === horario.id"
+                         [class.disabled-card]="horario.cuposDisponibles === 0"
+                         (click)="horario.cuposDisponibles > 0 ? seleccionarHorario(horario) : null">
+                      <div class="horario-time">
+                        {{ formatTime(horario.horaInicio) }} - {{ formatTime(horario.horaFin) }}
+                      </div>
+                      <div class="horario-turno">
+                        {{ getTurno(horario.horaInicio) }}
+                      </div>
+                      <div class="horario-cupos" [class.text-danger]="horario.cuposDisponibles === 0">
+                        @if (horario.cuposDisponibles > 0) {
+                          {{ horario.cuposDisponibles }} cupos disponibles
+                        } @else {
+                          Sin cupos
+                        }
+                      </div>
+                      @if (selectedHorario()?.id === horario.id) {
+                        <span class="material-icons-outlined check-icon">check_circle</span>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          <div class="wizard-actions">
+            <button class="btn btn-outline" (click)="prevStep()">Volver</button>
+            <button class="btn btn-primary" [disabled]="!selectedHorario()" (click)="nextStep()">Ver Resumen</button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- STEP 4: RESUMEN -->
+    @if (currentStep() === 4) {
+      <div class="step-container slide-in">
+        <h2 class="step-title">Resumen de tu cita</h2>
+        <p class="step-desc">Revisa los datos antes de confirmar.</p>
+        
+        <div class="resumen-card">
+          <div class="resumen-row">
+            <span class="material-icons-outlined icon">medical_services</span>
+            <div class="info">
+              <span class="label">Especialidad</span>
+              <span class="value">{{ selectedEspecialidad()?.nombre }}</span>
+            </div>
+          </div>
+          <div class="resumen-divider"></div>
+          <div class="resumen-row">
+            <span class="material-icons-outlined icon">person</span>
+            <div class="info">
+              <span class="label">Médico</span>
+              <span class="value">Dr/a. {{ selectedMedico()?.nombres }} {{ selectedMedico()?.apellidos }}</span>
+            </div>
+          </div>
+          <div class="resumen-divider"></div>
+          <div class="resumen-row">
+            <span class="material-icons-outlined icon">event</span>
+            <div class="info">
+              <span class="label">Fecha</span>
+              <span class="value">{{ selectedHorarioFormateado() }}</span>
+            </div>
+          </div>
+          <div class="resumen-divider"></div>
+          <div class="resumen-row">
+            <span class="material-icons-outlined icon">schedule</span>
+            <div class="info">
+              <span class="label">Horario</span>
+              <span class="value">
+                {{ formatTime(selectedHorario()?.horaInicio || '') }} - {{ formatTime(selectedHorario()?.horaFin || '') }}
+                <span style="color: var(--success-color, #16a34a); font-size: 13px; font-weight: 500; margin-left: 8px;">
+                  ({{ selectedHorario()?.cuposDisponibles }} cupos disponibles)
+                </span>
+              </span>
+            </div>
+          </div>
+
+          <div class="form-group mt-4">
+            <label for="motivo">Motivo de consulta (opcional)</label>
+            <textarea id="motivo" rows="3" class="form-control" 
+                      [ngModel]="motivoConsulta()" 
+                      (ngModelChange)="motivoConsulta.set($event)"
+                      [disabled]="reservando() || reservaExitosa()"
+                      placeholder="Describe brevemente el motivo de tu visita..."></textarea>
+          </div>
+          
+          @if (errorReserva()) {
+            <div class="reserva-error mt-4">
+              <span class="material-icons-outlined">error_outline</span>
+              {{ errorReserva() }}
+            </div>
+          }
+        </div>
+
+        <div class="wizard-actions">
+          <button class="btn btn-outline" (click)="prevStep()" [disabled]="reservando() || reservaExitosa()">Volver</button>
+          <button class="btn btn-primary btn-with-icon" 
+                  [disabled]="!selectedEspecialidad() || !selectedMedico() || !selectedHorario() || reservando() || reservaExitosa()" 
+                  (click)="confirmarReserva()">
+            @if (reservando()) {
+              <span class="spinner-small"></span>
+              Reservando...
+            } @else if (reservaExitosa()) {
+              <span class="material-icons-outlined">check_circle</span>
+              ¡Reservada!
+            } @else {
+              <span class="material-icons-outlined">event_available</span>
+              Confirmar reserva
+            }
+          </button>
+        </div>
+      </div>
+    }
+
+  </div>
+</div>

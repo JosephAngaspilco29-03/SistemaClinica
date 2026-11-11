@@ -1,0 +1,24 @@
+<header class="header-container">
+  <div class="left-section">
+    <button type="button" class="mobile-menu-btn" (click)="toggleMenu.emit()" aria-label="Abrir menú de navegación">
+      <span class="material-icons-outlined">menu</span>
+    </button>
+    <h2 class="page-title">{{ pageTitle }}</h2>
+  </div>
+  
+  <div class="right-section">
+    <div class="user-info">
+      <div class="user-details">
+        <span class="user-name">{{ userName }}</span>
+        <span class="user-role">{{ userRole }}</span>
+      </div>
+      <div class="user-avatar">
+        {{ userInitials }}
+      </div>
+    </div>
+    
+    <button type="button" class="logout-btn" title="Cerrar sesión" (click)="logout()">
+      <span class="material-icons-outlined">logout</span>
+    </button>
+  </div>
+</header>

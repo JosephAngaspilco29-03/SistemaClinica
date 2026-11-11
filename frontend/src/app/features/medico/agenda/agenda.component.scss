@@ -1,0 +1,267 @@
+.page-container {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0 0 0.5rem 0;
+  }
+
+  .page-subtitle {
+    color: #64748b;
+    margin: 0;
+  }
+}
+
+.resumen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.resumen-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+
+  .resumen-valor {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .resumen-label {
+    font-size: 1rem;
+    font-weight: 500;
+  }
+}
+
+.bg-primary-light {
+  background-color: #eff6ff;
+  color: #1e3a8a;
+}
+
+.bg-success-light {
+  background-color: #f0fdf4;
+  color: #14532d;
+}
+
+.bg-danger-light {
+  background-color: #fef2f2;
+  color: #7f1d1d;
+}
+
+.filtros-container {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+  }
+}
+
+.filtro-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #475569;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f8fafc;
+  }
+
+  &.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+  }
+}
+
+.agenda-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.fecha-grupo {
+  .fecha-header {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+  }
+}
+
+.citas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.cita-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  }
+}
+
+.cita-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+
+  .cita-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 1.1rem;
+
+    .material-icons-outlined {
+      color: var(--primary-color);
+      font-size: 1.25rem;
+    }
+  }
+}
+
+.cita-body {
+  .info-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.75rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &.mt-2 {
+      margin-top: 0.5rem;
+    }
+
+    .label {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 0.2rem;
+    }
+
+    .value {
+      font-weight: 500;
+      color: var(--text-color);
+
+      &.paciente-nombre {
+        font-size: 1.1rem;
+        color: var(--primary-color);
+        font-weight: 600;
+      }
+    }
+
+    .motivo {
+      background: #f8fafc;
+      padding: 0.5rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #475569;
+      font-style: italic;
+    }
+  }
+}
+
+.state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: white;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e2e8f0;
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+
+  .error-icon, .empty-icon {
+    font-size: 4rem;
+    color: #94a3b8;
+    margin-bottom: 1rem;
+  }
+
+  .error-icon {
+    color: #ef4444;
+  }
+
+  h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-color);
+  }
+
+  p {
+    color: #64748b;
+    margin-bottom: 1.5rem;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .citas-grid {
+    grid-template-columns: 1fr;
+  }
+}

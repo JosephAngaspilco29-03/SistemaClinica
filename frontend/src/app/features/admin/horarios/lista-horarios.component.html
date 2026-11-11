@@ -1,0 +1,254 @@
+<div class="page-container">
+
+  <section class="page-header">
+    <h1 class="page-title">
+      <span class="material-icons-outlined header-icon">schedule</span>
+      Gestión de horarios
+    </h1>
+    <p class="page-subtitle">Consulta los horarios de atención de los médicos registrados en el sistema.</p>
+
+    <button type="button" id="btn-nuevo-horario" class="btn btn-primary btn-nuevo" (click)="abrirFormulario()">
+      <span class="material-icons-outlined">add</span>
+      Nuevo horario
+    </button>
+
+    @if (!cargando() && !error()) {
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="stat-value">{{ horarios().length }}</span>
+          <span class="stat-label">Total</span>
+        </div>
+        <div class="stat-card stat-activos">
+          <span class="stat-value">{{ totalActivos() }}</span>
+          <span class="stat-label">Activos</span>
+        </div>
+        <div class="stat-card stat-inactivos">
+          <span class="stat-value">{{ totalInactivos() }}</span>
+          <span class="stat-label">Inactivos</span>
+        </div>
+        <div class="stat-card stat-vencidos">
+          <span class="stat-value">{{ totalVencidos() }}</span>
+          <span class="stat-label">Vencidos</span>
+        </div>
+      </div>
+    }
+  </section>
+
+  <div class="toolbar">
+    <div class="search-bar">
+      <span class="material-icons-outlined search-icon">search</span>
+      <input
+        id="busqueda-horario"
+        type="text"
+        class="search-input"
+        placeholder="Buscar por médico..."
+        [value]="busqueda()"
+        (input)="onBusqueda($event)"
+        autocomplete="off"
+      />
+      @if (busqueda()) {
+        <button type="button" class="clear-btn" (click)="limpiarBusqueda()" title="Limpiar búsqueda">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      }
+    </div>
+
+    @if (!cargando() && !error()) {
+      <span class="result-count">{{ horariosFiltrados().length }} de {{ horarios().length }} horarios</span>
+    }
+  </div>
+
+  @if (cargando()) {
+    <div class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Cargando horarios...</p>
+    </div>
+  } @else if (error()) {
+    <div class="state-container error-state">
+      <h3 class="state-title">No se pudo cargar la lista</h3>
+      <p class="state-text">{{ error() }}</p>
+      <button type="button" class="btn" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (horarios().length === 0) {
+    <div class="state-container">
+      <h3 class="state-title">Sin horarios registrados</h3>
+      <p class="state-text">No hay horarios en el sistema todavía.</p>
+    </div>
+  } @else if (horariosFiltrados().length === 0) {
+    <div class="state-container">
+      <h3 class="state-title">Sin resultados</h3>
+      <p class="state-text">Ningún horario coincide con "<strong>{{ busqueda() }}</strong>".</p>
+      <button type="button" class="btn" (click)="limpiarBusqueda()">Limpiar búsqueda</button>
+    </div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="horarios-table" aria-label="Listado de horarios médicos">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Médico</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Hora inicio</th>
+            <th scope="col">Hora fin</th>
+            <th scope="col">Cupos disponibles</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (h of horariosFiltrados(); track h.id; let i = $index) {
+            <tr [class.row-inactivo]="!h.activo || esVencido(h)">
+              <td class="cell-id">{{ i + 1 }}</td>
+              <td class="cell-nombre">{{ h.medicoNombre }}</td>
+              <td>{{ formatearFecha(h.fecha) }}</td>
+              <td>{{ formatearHora(h.horaInicio) }}</td>
+              <td>{{ formatearHora(h.horaFin) }}</td>
+              <td class="cell-cupos">{{ h.cuposDisponibles }}</td>
+              <td>
+                <span class="estado-badge"
+                      [class.badge-vencido]="esVencido(h)"
+                      [class.badge-activo]="!esVencido(h) && h.activo"
+                      [class.badge-inactivo]="!esVencido(h) && !h.activo">
+                  <span class="badge-dot"></span>
+                  {{ estadoVisual(h) }}
+                </span>
+              </td>
+              <td>
+                <div class="acciones-wrap">
+                  <button type="button" class="btn btn-accion" (click)="abrirFormulario(h)"
+                          [attr.aria-label]="'Editar horario de ' + h.medicoNombre">
+                    <span class="material-icons-outlined">edit</span>
+                    Editar
+                  </button>
+                  <button type="button"
+                          class="btn btn-accion"
+                          [class.btn-desactivar]="h.activo"
+                          [class.btn-activar]="!h.activo"
+                          (click)="solicitarCambioEstado(h)"
+                          [attr.aria-label]="(h.activo ? 'Desactivar' : 'Activar') + ' horario de ' + h.medicoNombre">
+                    <span class="material-icons-outlined">{{ h.activo ? 'block' : 'check_circle_outline' }}</span>
+                    {{ h.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (toast(); as t) {
+    <div class="toast" [class.toast-error]="t.tipo === 'error'" role="status">
+      <span class="material-icons-outlined">{{ t.tipo === 'exito' ? 'check_circle' : 'error_outline' }}</span>
+      {{ t.mensaje }}
+    </div>
+  }
+
+  @if (mostrarFormulario()) {
+    <div class="modal-backdrop" (click)="cerrarFormulario()">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="titulo-form-horario" (click)="$event.stopPropagation()">
+        <h2 id="titulo-form-horario" class="modal-title">
+          {{ horarioEditando() ? 'Editar horario médico' : 'Nuevo horario médico' }}
+        </h2>
+
+        <form [formGroup]="form" (ngSubmit)="guardarHorario()" novalidate>
+          @if (horarioEditando(); as ed) {
+            <div class="form-field">
+              <label>Médico</label>
+              <input type="text" [value]="ed.medicoNombre" disabled />
+            </div>
+            @if (ed.tieneCitas) {
+              <div class="form-info-citas" role="status">
+                Este horario ya tiene citas asociadas. No se permite modificar su fecha, horas ni cupos para proteger las reservas existentes.
+              </div>
+            }
+          } @else {
+            <div class="form-field">
+              <label for="f-medico">Médico *</label>
+              <select id="f-medico" formControlName="medicoId">
+                <option [ngValue]="0" disabled>
+                  {{ cargandoMedicos() ? 'Cargando médicos...' : 'Seleccione un médico' }}
+                </option>
+                @for (m of medicosActivos(); track m.id) {
+                  <option [ngValue]="m.id">{{ m.nombres }} {{ m.apellidos }} ({{ m.numeroColegiatura }})</option>
+                }
+              </select>
+              @if (campoInvalido('medicoId')) { <small class="field-error">Seleccione un médico.</small> }
+            </div>
+          }
+
+          <div class="form-field">
+            <label for="f-fecha">Fecha *</label>
+            <input id="f-fecha" type="date" formControlName="fecha" [min]="hoy()" [readonly]="!!horarioEditando()?.tieneCitas" />
+            @if (campoInvalido('fecha')) { <small class="field-error">La fecha es obligatoria.</small> }
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="f-inicio">Hora de inicio *</label>
+              <input id="f-inicio" type="time" formControlName="horaInicio" [readonly]="!!horarioEditando()?.tieneCitas" />
+              @if (campoInvalido('horaInicio')) { <small class="field-error">Obligatoria.</small> }
+            </div>
+            <div class="form-field">
+              <label for="f-fin">Hora de fin *</label>
+              <input id="f-fin" type="time" formControlName="horaFin" [readonly]="!!horarioEditando()?.tieneCitas" />
+              @if (campoInvalido('horaFin')) { <small class="field-error">Obligatoria.</small> }
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="f-cupos">Cupos disponibles *</label>
+            <input id="f-cupos" type="number" min="1" max="1000" formControlName="cuposDisponibles" [readonly]="!!horarioEditando()?.tieneCitas" />
+            @if (campoInvalido('cuposDisponibles')) { <small class="field-error">Ingrese un número entre 1 y 1000.</small> }
+          </div>
+
+          @if (errorServidor(); as msg) {
+            <div class="form-error-server" role="alert">{{ msg }}</div>
+          }
+
+          <div class="modal-actions">
+            <button type="button" class="btn" (click)="cerrarFormulario()" [disabled]="guardando()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="guardando() || !!horarioEditando()?.tieneCitas">
+              {{ guardando() ? 'Guardando...' : (horarioEditando() ? 'Guardar cambios' : 'Guardar horario') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  @if (horarioConfirmandoEstado(); as h) {
+    <div class="modal-backdrop" (click)="cancelarCambioEstado()">
+      <div class="modal-card modal-confirm" role="dialog" aria-modal="true" aria-labelledby="titulo-confirm-horario" (click)="$event.stopPropagation()">
+        <h2 id="titulo-confirm-horario" class="modal-title">
+          {{ h.activo ? 'Desactivar horario' : 'Activar horario' }}
+        </h2>
+        <p class="confirm-text">
+          ¿Está seguro de que desea {{ h.activo ? 'desactivar' : 'activar' }} el horario de
+          <strong>{{ h.medicoNombre }}</strong> del <strong>{{ formatearFecha(h.fecha) }}</strong>
+          ({{ formatearHora(h.horaInicio) }} - {{ formatearHora(h.horaFin) }})?
+        </p>
+        @if (h.activo) {
+          <p class="confirm-subtext">
+            El horario dejará de ofrecerse para nuevas reservas, conservando las citas existentes.
+          </p>
+        }
+        <div class="modal-actions">
+          <button type="button" class="btn" (click)="cancelarCambioEstado()" [disabled]="procesandoEstado()">
+            Cancelar
+          </button>
+          <button type="button"
+                  class="btn"
+                  [class.btn-danger]="h.activo"
+                  [class.btn-primary]="!h.activo"
+                  (click)="confirmarCambioEstado()"
+                  [disabled]="procesandoEstado()">
+            {{ procesandoEstado() ? 'Procesando...' : (h.activo ? 'Sí, desactivar' : 'Sí, activar') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

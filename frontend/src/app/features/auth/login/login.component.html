@@ -1,0 +1,244 @@
+<div class="login-page">
+  <div class="login-box" [class.is-revealed]="isRevealed()" [class.mode-register]="authMode() === 'register'">
+
+    <!-- BASE LAYER: FORMS -->
+    <div class="form-layer">
+
+      <!-- REGISTER HALF (LEFT) -->
+      <div class="register-half">
+        <div class="form-content">
+          
+          <div class="mobile-branding">
+            <a routerLink="/" class="back-link">
+              <span class="material-icons-outlined">arrow_back</span>
+              Volver
+            </a>
+            <div class="logo">
+              <span class="material-icons-outlined logo-icon">local_hospital</span>
+              <span class="logo-text">Sistema<span class="text-primary">Clinica</span></span>
+            </div>
+          </div>
+
+          <div class="form-header stagger-1">
+            <h2>Crear cuenta</h2>
+            <p>Regístrate como paciente en el sistema</p>
+          </div>
+
+          <div *ngIf="registerSuccess" class="success-message stagger-2" style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background-color: #f0fdf4; border-left: 4px solid #22c55e; color: #166534; border-radius: 8px; font-size: 14px; font-weight: 500; margin-bottom: 20px;">
+            <span class="material-icons-outlined">check_circle</span>
+            Tu cuenta fue creada correctamente. Ahora puedes iniciar sesión.
+          </div>
+
+          <form *ngIf="!registerSuccess" [formGroup]="registerForm" (ngSubmit)="onRegisterSubmit()" class="login-form">
+            
+            <!-- PASO 1 -->
+            <ng-container *ngIf="registerStep() === 1">
+              <div class="form-group stagger-2">
+                <label>Nombres</label>
+                <div class="input-wrapper">
+                  <span class="material-icons-outlined input-icon">person</span>
+                  <input type="text" formControlName="nombres" placeholder="Tus nombres" [class.is-invalid]="registerForm.controls.nombres.invalid && (registerForm.controls.nombres.dirty || registerForm.controls.nombres.touched || registerSubmitted)">
+                </div>
+              </div>
+              <div class="form-group stagger-2">
+                <label>Apellidos</label>
+                <div class="input-wrapper">
+                  <span class="material-icons-outlined input-icon">badge</span>
+                  <input type="text" formControlName="apellidos" placeholder="Tus apellidos" [class.is-invalid]="registerForm.controls.apellidos.invalid && (registerForm.controls.apellidos.dirty || registerForm.controls.apellidos.touched || registerSubmitted)">
+                </div>
+              </div>
+              <div style="display: flex; gap: 12px;" class="stagger-3">
+                <div class="form-group" style="flex: 1;">
+                  <label>DNI / Documento</label>
+                  <div class="input-wrapper">
+                    <span class="material-icons-outlined input-icon">pin</span>
+                    <input type="text" formControlName="documentoIdentidad" placeholder="Documento" [class.is-invalid]="registerForm.controls.documentoIdentidad.invalid && (registerForm.controls.documentoIdentidad.dirty || registerForm.controls.documentoIdentidad.touched || registerSubmitted)">
+                  </div>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label>Sexo</label>
+                  <div class="input-wrapper">
+                    <span class="material-icons-outlined input-icon">wc</span>
+                    <select formControlName="sexo" style="width: 100%; padding: 14px 16px 14px 44px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 15px; font-family: inherit; color: #0f172a; background-color: #ffffff; appearance: none;" [class.is-invalid]="registerForm.controls.sexo.invalid && (registerForm.controls.sexo.dirty || registerForm.controls.sexo.touched || registerSubmitted)">
+                      <option value="" disabled selected>Seleccione...</option>
+                      <option value="M">Masculino</option>
+                      <option value="F">Femenino</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group stagger-3">
+                <label>Fecha de Nacimiento</label>
+                <div class="input-wrapper">
+                  <span class="material-icons-outlined input-icon">cake</span>
+                  <input type="date" formControlName="fechaNacimiento" [class.is-invalid]="registerForm.controls.fechaNacimiento.invalid && (registerForm.controls.fechaNacimiento.dirty || registerForm.controls.fechaNacimiento.touched || registerSubmitted)">
+                </div>
+              </div>
+              
+              <button type="button" class="btn-primary stagger-4" (click)="nextStep()">
+                Siguiente paso
+              </button>
+            </ng-container>
+
+            <!-- PASO 2 -->
+            <ng-container *ngIf="registerStep() === 2">
+              <div class="form-group stagger-2">
+                <label>Nombre de Usuario</label>
+                <div class="input-wrapper">
+                  <span class="material-icons-outlined input-icon">account_circle</span>
+                  <input type="text" formControlName="nombreUsuario" placeholder="Elige un usuario" [class.is-invalid]="registerForm.controls.nombreUsuario.invalid && (registerForm.controls.nombreUsuario.dirty || registerForm.controls.nombreUsuario.touched || registerSubmitted)">
+                </div>
+              </div>
+              <div class="form-group stagger-3">
+                <label>Contraseña</label>
+                <div class="input-wrapper">
+                  <span class="material-icons-outlined input-icon">lock</span>
+                  <input [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="Mínimo 8 caracteres" [class.is-invalid]="registerForm.controls.password.invalid && (registerForm.controls.password.dirty || registerForm.controls.password.touched || registerSubmitted)">
+                  <button type="button" class="toggle-password" (click)="togglePassword()">
+                    <span class="material-icons-outlined">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group stagger-3">
+                <label>Confirmar contraseña</label>
+                <div class="input-wrapper">
+                  <span class="material-icons-outlined input-icon">lock_clock</span>
+                  <input [type]="showPassword ? 'text' : 'password'" formControlName="confirmPassword" placeholder="Repite la contraseña" [class.is-invalid]="registerForm.controls.confirmPassword.invalid && (registerForm.controls.confirmPassword.dirty || registerForm.controls.confirmPassword.touched || registerSubmitted) || registerForm.hasError('mismatch')">
+                </div>
+                <div class="validation-message" *ngIf="registerForm.hasError('mismatch') && (registerForm.controls.confirmPassword.dirty || registerForm.controls.confirmPassword.touched)">
+                  Las contraseñas no coinciden.
+                </div>
+              </div>
+              
+              <div *ngIf="registerError" class="error-message stagger-4">
+                <span class="material-icons-outlined">error_outline</span>
+                {{ registerError }}
+              </div>
+
+              <div style="display: flex; gap: 12px; margin-top: 8px;" class="stagger-4">
+                <button type="button" style="flex: 1; padding: 14px; background: transparent; border: 1px solid #cbd5e1; color: #475569; border-radius: 12px; font-weight: 600; cursor: pointer;" (click)="prevStep()">Volver</button>
+                <button type="submit" class="btn-primary" style="flex: 1; margin-top: 0;" [disabled]="registerLoading">
+                  <span *ngIf="!registerLoading">Crear cuenta</span>
+                  <span *ngIf="registerLoading" class="material-icons-outlined spin">autorenew</span>
+                </button>
+              </div>
+            </ng-container>
+            
+          </form>
+
+          <div class="auth-switch stagger-4" style="margin-top: 24px; text-align: center; color: #64748b; font-size: 15px;">
+            ¿Ya tienes una cuenta? <a (click)="switchMode('login')" style="color: #0284c7; font-weight: 600; cursor: pointer; text-decoration: none;">Iniciar sesión</a>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- LOGIN HALF (RIGHT) -->
+      <div class="login-half">
+        <div class="form-content">
+          
+          <div class="mobile-branding">
+            <a routerLink="/" class="back-link">
+              <span class="material-icons-outlined">arrow_back</span>
+              Volver
+            </a>
+            <div class="logo">
+              <span class="material-icons-outlined logo-icon">local_hospital</span>
+              <span class="logo-text">Sistema<span class="text-primary">Clinica</span></span>
+            </div>
+          </div>
+
+          <div class="form-header stagger-1">
+            <h2>Bienvenido</h2>
+            <p>Ingresa a tu cuenta para continuar</p>
+          </div>
+
+          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+            
+            <div class="form-group stagger-2">
+              <label for="nombreUsuario">Usuario</label>
+              <div class="input-wrapper">
+                <span class="material-icons-outlined input-icon">person</span>
+                <input 
+                  type="text" 
+                  id="nombreUsuario" 
+                  formControlName="nombreUsuario" 
+                  placeholder="Ingresa tu usuario"
+                  [class.is-invalid]="loginForm.controls.nombreUsuario.invalid && (loginForm.controls.nombreUsuario.dirty || loginForm.controls.nombreUsuario.touched || submitted)"
+                >
+              </div>
+              <div class="validation-message" *ngIf="loginForm.controls.nombreUsuario.invalid && (loginForm.controls.nombreUsuario.dirty || loginForm.controls.nombreUsuario.touched || submitted)">
+                Usuario es requerido.
+              </div>
+            </div>
+
+            <div class="form-group stagger-3">
+              <label for="password">Contraseña</label>
+              <div class="input-wrapper">
+                <span class="material-icons-outlined input-icon">lock</span>
+                <input 
+                  [type]="showPassword ? 'text' : 'password'"
+                  id="password" 
+                  formControlName="password" 
+                  placeholder="Ingresa tu contraseña"
+                  [class.is-invalid]="loginForm.controls.password.invalid && (loginForm.controls.password.dirty || loginForm.controls.password.touched || submitted)"
+                >
+                <button type="button" class="toggle-password" (click)="togglePassword()" aria-label="Mostrar contraseña">
+                  <span class="material-icons-outlined">
+                    {{ showPassword ? 'visibility_off' : 'visibility' }}
+                  </span>
+                </button>
+              </div>
+              <div class="validation-message" *ngIf="loginForm.controls.password.invalid && (loginForm.controls.password.dirty || loginForm.controls.password.touched || submitted)">
+                Contraseña es requerida.
+              </div>
+            </div>
+
+            <div *ngIf="error" class="error-message stagger-4">
+              <span class="material-icons-outlined">error_outline</span>
+              {{ error }}
+            </div>
+
+            <button type="submit" class="btn-primary stagger-4" [disabled]="loading">
+              <span *ngIf="!loading">Iniciar sesión</span>
+              <span *ngIf="loading" class="material-icons-outlined spin">autorenew</span>
+            </button>
+          </form>
+
+          <div class="auth-switch stagger-4" style="margin-top: 24px; text-align: center; color: #64748b; font-size: 15px;">
+            ¿No tienes una cuenta? <a (click)="switchMode('register')" style="color: #0284c7; font-weight: 600; cursor: pointer; text-decoration: none;">Crear una cuenta</a>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- OVERLAY LAYER: MASK & MEDICAL -->
+    <div class="overlay-layer">
+      <div class="medical-content">
+        
+        <a routerLink="/" class="back-link desktop-only">
+          <span class="material-icons-outlined">arrow_back</span>
+          Volver al inicio
+        </a>
+        
+        <div class="branding desktop-only">
+          <span class="material-icons-outlined logo-icon">local_hospital</span>
+          <span class="logo-text">Sistema<span class="text-primary">Clinica</span></span>
+        </div>
+
+        <div class="hero-text">
+          <h1>Tu salud, siempre contigo</h1>
+          <p>Accede a tus citas, atenciones e historial desde un solo lugar.</p>
+        </div>
+
+        <div class="illustration-container">
+          <img src="/images/login-medical.svg" alt="Profesional Médico" />
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

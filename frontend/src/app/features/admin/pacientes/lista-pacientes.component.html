@@ -1,0 +1,390 @@
+<div class="page-container">
+
+  <!-- ══════════════════════════════════════════
+       TOAST DE NOTIFICACIÓN
+  ══════════════════════════════════════════ -->
+  @if (toast()) {
+    <div class="toast" [class.toast-exito]="toast()!.tipo === 'exito'" [class.toast-error]="toast()!.tipo === 'error'" role="alert">
+      <span class="material-icons-outlined toast-icon">
+        {{ toast()!.tipo === 'exito' ? 'check_circle' : 'error_outline' }}
+      </span>
+      <span class="toast-msg">{{ toast()!.mensaje }}</span>
+      <button class="toast-close" (click)="cerrarToast()" aria-label="Cerrar">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════
+       CABECERA
+  ══════════════════════════════════════════ -->
+  <section class="page-header">
+    <div class="header-top">
+      <div class="header-content">
+        <h1 class="page-title">
+          <span class="material-icons-outlined header-icon">people</span>
+          Gestión de Pacientes
+        </h1>
+        <p class="page-subtitle">
+          Consulta y registra los pacientes del sistema.
+        </p>
+      </div>
+      <button id="btn-nuevo-paciente" class="btn btn-primary" (click)="abrirDrawer()">
+        <span class="material-icons-outlined">person_add</span>
+        Nuevo paciente
+      </button>
+    </div>
+
+    <!-- Tarjetas de resumen -->
+    @if (!cargando() && !error()) {
+      <div class="stats-row">
+        <div class="stat-card stat-total">
+          <span class="material-icons-outlined">group</span>
+          <div class="stat-info">
+            <span class="stat-value">{{ pacientes().length }}</span>
+            <span class="stat-label">Total</span>
+          </div>
+        </div>
+        <div class="stat-card stat-activos">
+          <span class="material-icons-outlined">check_circle</span>
+          <div class="stat-info">
+            <span class="stat-value">{{ totalActivos() }}</span>
+            <span class="stat-label">Activos</span>
+          </div>
+        </div>
+        <div class="stat-card stat-inactivos">
+          <span class="material-icons-outlined">cancel</span>
+          <div class="stat-info">
+            <span class="stat-value">{{ totalInactivos() }}</span>
+            <span class="stat-label">Inactivos</span>
+          </div>
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       BUSCADOR
+  ══════════════════════════════════════════ -->
+  <div class="toolbar">
+    <div class="search-bar">
+      <span class="material-icons-outlined search-icon">search</span>
+      <input
+        id="busqueda-paciente"
+        type="text"
+        class="search-input"
+        placeholder="Buscar por nombre, documento o email..."
+        [value]="busqueda()"
+        (input)="onBusqueda($event)"
+        autocomplete="off"
+      />
+      @if (busqueda()) {
+        <button class="clear-btn" (click)="limpiarBusqueda()" title="Limpiar búsqueda">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      }
+    </div>
+
+    @if (!cargando() && !error()) {
+      <span class="result-count">
+        {{ pacientesFiltrados().length }} de {{ pacientes().length }} pacientes
+      </span>
+    }
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       ESTADOS: CARGANDO / ERROR / VACÍO
+  ══════════════════════════════════════════ -->
+  @if (cargando()) {
+    <div class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Cargando pacientes...</p>
+    </div>
+  } @else if (error()) {
+    <div class="state-container error-state">
+      <span class="material-icons-outlined state-icon">error_outline</span>
+      <h3 class="state-title">No se pudo cargar la lista</h3>
+      <p class="state-text">{{ error() }}</p>
+      <button class="btn btn-outline" (click)="cargarPacientes()">
+        <span class="material-icons-outlined">refresh</span>
+        Reintentar
+      </button>
+    </div>
+  } @else if (pacientes().length === 0) {
+    <div class="state-container empty-state">
+      <span class="material-icons-outlined state-icon">person_search</span>
+      <h3 class="state-title">Sin pacientes registrados</h3>
+      <p class="state-text">Comienza registrando el primer paciente.</p>
+      <button class="btn btn-primary" (click)="abrirDrawer()">
+        <span class="material-icons-outlined">person_add</span>
+        Registrar paciente
+      </button>
+    </div>
+  } @else if (pacientesFiltrados().length === 0) {
+    <div class="state-container empty-state">
+      <span class="material-icons-outlined state-icon">search_off</span>
+      <h3 class="state-title">Sin resultados</h3>
+      <p class="state-text">
+        Ningún paciente coincide con "<strong>{{ busqueda() }}</strong>".
+      </p>
+      <button class="btn btn-ghost" (click)="limpiarBusqueda()">Limpiar búsqueda</button>
+    </div>
+  } @else {
+
+    <!-- ══════════════════════════════════════════
+         TABLA DE PACIENTES
+    ══════════════════════════════════════════ -->
+    <div class="table-wrapper">
+      <table class="pacientes-table" aria-label="Listado de pacientes">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Paciente</th>
+            <th scope="col">Documento</th>
+            <th scope="col">Edad</th>
+            <th scope="col">Sexo</th>
+            <th scope="col">Teléfono</th>
+            <th scope="col">Email</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="col-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (paciente of pacientesFiltrados(); track paciente.id; let i = $index) {
+            <tr class="table-row" [class.row-inactivo]="!paciente.activo">
+              <td class="cell-id">{{ i + 1 }}</td>
+              <td class="cell-nombre">
+                <div class="nombre-wrap">
+                  <div class="avatar">
+                    {{ paciente.nombres.charAt(0) }}{{ paciente.apellidos.charAt(0) }}
+                  </div>
+                  <span class="nombre-completo">{{ paciente.nombres }} {{ paciente.apellidos }}</span>
+                </div>
+              </td>
+              <td class="cell-doc">
+                <span class="doc-badge">{{ paciente.documentoIdentidad }}</span>
+              </td>
+              <td class="cell-edad">{{ calcularEdad(paciente.fechaNacimiento) }} años</td>
+              <td class="cell-sexo">
+                <span class="sexo-chip" [class.chip-m]="paciente.sexo === 'M'" [class.chip-f]="paciente.sexo === 'F'">
+                  {{ paciente.sexo === 'M' ? 'Masculino' : paciente.sexo === 'F' ? 'Femenino' : paciente.sexo }}
+                </span>
+              </td>
+              <td class="cell-tel">{{ paciente.telefono || '—' }}</td>
+              <td class="cell-email">{{ paciente.email || '—' }}</td>
+              <td class="cell-estado">
+                <span class="estado-badge" [class.badge-activo]="paciente.activo" [class.badge-inactivo]="!paciente.activo">
+                  <span class="badge-dot"></span>
+                  {{ paciente.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="cell-acciones">
+                <button class="btn-accion btn-editar"
+                        (click)="abrirEditar(paciente)"
+                        title="Editar paciente"
+                        [id]="'btn-editar-' + paciente.id">
+                  <span class="material-icons-outlined">edit</span>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     OVERLAY + DRAWER: NUEVO PACIENTE
+══════════════════════════════════════════════════════ -->
+@if (drawerAbierto()) {
+  <div class="overlay" (click)="cerrarDrawer()" aria-hidden="true"></div>
+
+  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+
+    <!-- Cabecera del drawer -->
+    <div class="drawer-header">
+      <div class="drawer-title-row">
+        <span class="material-icons-outlined drawer-icon">
+          {{ modo() === 'crear' ? 'person_add' : 'edit' }}
+        </span>
+        <div>
+          <h2 id="drawer-title" class="drawer-title">
+            {{ modo() === 'crear' ? 'Nuevo paciente' : 'Editar paciente' }}
+          </h2>
+          @if (modo() === 'editar' && pacienteEditando()) {
+            <p class="drawer-subtitle">ID #{{ pacienteEditando()!.id }}</p>
+          }
+        </div>
+      </div>
+      <button class="drawer-close" (click)="cerrarDrawer()" [disabled]="guardando()" aria-label="Cerrar">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Formulario -->
+    <form [formGroup]="form" (ngSubmit)="guardar()" class="drawer-form" novalidate>
+
+      <!-- Nombres & Apellidos -->
+      <div class="form-row">
+        <div class="form-group" [class.has-error]="esInvalido('nombres')">
+          <label for="f-nombres" class="form-label">
+            Nombres <span class="required">*</span>
+          </label>
+          <input id="f-nombres" type="text" class="form-control"
+                 formControlName="nombres" placeholder="Ej. Juan Carlos" autocomplete="off" />
+          @if (esInvalido('nombres')) {
+            <span class="field-error">
+              @if (campo('nombres').hasError('required')) { Nombres es obligatorio. }
+              @else if (campo('nombres').hasError('minlength')) { Mínimo 2 caracteres. }
+              @else if (campo('nombres').hasError('maxlength')) { Máximo 100 caracteres. }
+            </span>
+          }
+        </div>
+
+        <div class="form-group" [class.has-error]="esInvalido('apellidos')">
+          <label for="f-apellidos" class="form-label">
+            Apellidos <span class="required">*</span>
+          </label>
+          <input id="f-apellidos" type="text" class="form-control"
+                 formControlName="apellidos" placeholder="Ej. Pérez García" autocomplete="off" />
+          @if (esInvalido('apellidos')) {
+            <span class="field-error">
+              @if (campo('apellidos').hasError('required')) { Apellidos es obligatorio. }
+              @else if (campo('apellidos').hasError('minlength')) { Mínimo 2 caracteres. }
+              @else if (campo('apellidos').hasError('maxlength')) { Máximo 100 caracteres. }
+            </span>
+          }
+        </div>
+      </div>
+
+      <!-- Documento -->
+      <div class="form-group" [class.has-error]="esInvalido('documentoIdentidad')">
+        <label for="f-doc" class="form-label">
+          Documento de identidad
+          @if (modo() === 'crear') { <span class="required">*</span> }
+        </label>
+        <div class="input-readonly-wrap">
+          <input id="f-doc" type="text" class="form-control"
+                 formControlName="documentoIdentidad" placeholder="Ej. 12345678" autocomplete="off"
+                 [class.input-readonly]="modo() === 'editar'" />
+          @if (modo() === 'editar') {
+            <span class="readonly-hint" title="El documento no puede modificarse">
+              <span class="material-icons-outlined">lock</span>
+            </span>
+          }
+        </div>
+        @if (esInvalido('documentoIdentidad')) {
+          <span class="field-error">
+            @if (campo('documentoIdentidad').hasError('required')) { El documento es obligatorio. }
+            @else if (campo('documentoIdentidad').hasError('minlength')) { Mínimo 5 caracteres. }
+            @else if (campo('documentoIdentidad').hasError('maxlength')) { Máximo 20 caracteres. }
+          </span>
+        }
+      </div>
+
+      <!-- Fecha de nacimiento & Sexo -->
+      <div class="form-row">
+        <div class="form-group" [class.has-error]="esInvalido('fechaNacimiento')">
+          <label for="f-fecha" class="form-label">
+            Fecha de nacimiento <span class="required">*</span>
+          </label>
+          <input id="f-fecha" type="date" class="form-control"
+                 formControlName="fechaNacimiento" />
+          @if (esInvalido('fechaNacimiento')) {
+            <span class="field-error">
+              @if (campo('fechaNacimiento').hasError('required')) { La fecha es obligatoria. }
+              @else if (campo('fechaNacimiento').hasError('fechaFutura')) { La fecha no puede ser futura. }
+              @else if (campo('fechaNacimiento').hasError('fechaMuyAntigua')) { Fecha inválida. }
+            </span>
+          }
+        </div>
+
+        <div class="form-group" [class.has-error]="esInvalido('sexo')">
+          <label for="f-sexo" class="form-label">
+            Sexo <span class="required">*</span>
+          </label>
+          <select id="f-sexo" class="form-control" formControlName="sexo">
+            <option value="">— Seleccionar —</option>
+            <option value="M">Masculino</option>
+            <option value="F">Femenino</option>
+          </select>
+          @if (esInvalido('sexo')) {
+            <span class="field-error">El sexo es obligatorio.</span>
+          }
+        </div>
+      </div>
+
+      <!-- Teléfono & Email -->
+      <div class="form-row">
+        <div class="form-group" [class.has-error]="esInvalido('telefono')">
+          <label for="f-tel" class="form-label">Teléfono</label>
+          <input id="f-tel" type="tel" class="form-control"
+                 formControlName="telefono" placeholder="Ej. 987654321" autocomplete="off" />
+          @if (esInvalido('telefono')) {
+            <span class="field-error">Máximo 20 caracteres.</span>
+          }
+        </div>
+
+        <div class="form-group" [class.has-error]="esInvalido('email')">
+          <label for="f-email" class="form-label">Correo electrónico</label>
+          <input id="f-email" type="email" class="form-control"
+                 formControlName="email" placeholder="paciente@ejemplo.com" autocomplete="off" />
+          @if (esInvalido('email')) {
+            <span class="field-error">
+              @if (campo('email').hasError('email')) { Ingrese un correo válido. }
+              @else if (campo('email').hasError('maxlength')) { Máximo 150 caracteres. }
+            </span>
+          }
+        </div>
+      </div>
+
+      <!-- Dirección -->
+      <div class="form-group" [class.has-error]="esInvalido('direccion')">
+        <label for="f-dir" class="form-label">Dirección</label>
+        <input id="f-dir" type="text" class="form-control"
+               formControlName="direccion" placeholder="Av. Principal 123, Ciudad" autocomplete="off" />
+        @if (esInvalido('direccion')) {
+          <span class="field-error">Máximo 250 caracteres.</span>
+        }
+      </div>
+
+      <!-- Estado (solo en modo editar) -->
+      @if (modo() === 'editar') {
+        <div class="form-group">
+          <label class="form-label">Estado del paciente</label>
+          <label class="toggle-switch">
+            <input id="f-activo" type="checkbox" formControlName="activo" />
+            <span class="toggle-track">
+              <span class="toggle-thumb"></span>
+            </span>
+            <span class="toggle-label">
+              {{ campo('activo').value ? 'Activo' : 'Inactivo' }}
+            </span>
+          </label>
+        </div>
+      }
+
+      <!-- Acciones -->
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" (click)="cerrarDrawer()" [disabled]="guardando()">
+          Cancelar
+        </button>
+        <button id="btn-guardar-paciente" type="submit" class="btn btn-primary" [disabled]="guardando()">
+          @if (guardando()) {
+            <span class="btn-spinner"></span>
+            Guardando...
+          } @else if (modo() === 'crear') {
+            <span class="material-icons-outlined">person_add</span>
+            Registrar paciente
+          } @else {
+            <span class="material-icons-outlined">save</span>
+            Guardar cambios
+          }
+        </button>
+      </div>
+
+    </form>
+  </aside>
+}

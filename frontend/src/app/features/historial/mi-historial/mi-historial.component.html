@@ -1,0 +1,151 @@
+<div class="page-container">
+  <!-- Header Section -->
+  <section class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Mi historial clínico</h1>
+      <p class="page-subtitle">Consulta tus atenciones médicas y diagnósticos registrados.</p>
+    </div>
+  </section>
+
+  <!-- Content Section -->
+  <section class="content-section">
+    @if (loading()) {
+      <div class="state-container loading-state">
+        <div class="spinner"></div>
+        <p>Cargando historial clínico...</p>
+      </div>
+    } @else if (error()) {
+      <div class="state-container error-state">
+        <span class="material-icons-outlined error-icon">error_outline</span>
+        <h3>Ocurrió un problema</h3>
+        <p>No se pudo cargar tu historial clínico. Intenta nuevamente.</p>
+        <button class="btn btn-outline" (click)="cargarHistorial()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (atenciones().length === 0) {
+      <div class="state-container empty-state">
+        <span class="material-icons-outlined empty-icon">assignment</span>
+        <h3>Aún no tienes atenciones médicas registradas.</h3>
+        <p>Cuando un médico registre una atención, aparecerá aquí.</p>
+      </div>
+    } @else {
+      
+      <!-- Paciente Info Card -->
+      <div class="paciente-info-card">
+        <div class="info-group">
+          <span class="label">Paciente</span>
+          <span class="value">{{ historial()?.pacienteNombre }}</span>
+        </div>
+        <div class="info-group">
+          <span class="label">Documento</span>
+          <span class="value">{{ historial()?.documentoIdentidad }}</span>
+        </div>
+        <div class="info-group">
+          <span class="label">Sexo</span>
+          <span class="value">{{ historial()?.sexo }}</span>
+        </div>
+        <div class="info-group">
+          <span class="label">Fecha de Nac.</span>
+          <span class="value">{{ historial()?.fechaNacimiento | date:'dd/MM/yyyy' }}</span>
+        </div>
+      </div>
+
+      <!-- Timeline de Atenciones -->
+      <div class="timeline">
+        @for (atencion of atenciones(); track atencion.atencionMedicaId) {
+          <div class="timeline-item">
+            <div class="timeline-marker"></div>
+            
+            <div class="atencion-card card" [class.expanded]="isExpanded(atencion.atencionMedicaId)">
+              <!-- Card Header -->
+              <div class="atencion-header" (click)="toggleCard(atencion.atencionMedicaId)">
+                <div class="header-main">
+                  <div class="atencion-date-box">
+                    <span class="material-icons-outlined">event</span>
+                    <span class="date">{{ atencion.fechaAtencion | date:'dd/MM/yyyy' }}</span>
+                  </div>
+                  <div class="atencion-medico">
+                    <span class="material-icons-outlined">medical_services</span>
+                    {{ atencion.medicoNombre }}
+                  </div>
+                </div>
+
+                <div class="header-details">
+                  <div class="info-row">
+                    <span class="label">Motivo:</span>
+                    <span class="value">{{ atencion.motivoConsulta }}</span>
+                  </div>
+                  
+                  @if (getDiagnosticoPrincipal(atencion); as principal) {
+                    <div class="diag-principal">
+                      <span class="badge badge-primary">Principal</span>
+                      <span class="cie10">{{ principal.codigoCie10 }}</span>
+                      <span class="desc">{{ principal.descripcion }}</span>
+                    </div>
+                  }
+                </div>
+
+                <button class="expand-btn">
+                  <span>{{ isExpanded(atencion.atencionMedicaId) ? 'Ver menos' : 'Ver detalle' }}</span>
+                  <span class="material-icons-outlined">
+                    {{ isExpanded(atencion.atencionMedicaId) ? 'expand_less' : 'expand_more' }}
+                  </span>
+                </button>
+              </div>
+
+              <!-- Card Body (Expandable) -->
+              @if (isExpanded(atencion.atencionMedicaId)) {
+                <div class="atencion-body">
+                  @if (atencion.anamnesis) {
+                    <div class="section-block">
+                      <h4>Anamnesis</h4>
+                      <p>{{ atencion.anamnesis }}</p>
+                    </div>
+                  }
+                  
+                  @if (atencion.examenFisico) {
+                    <div class="section-block">
+                      <h4>Examen físico</h4>
+                      <p>{{ atencion.examenFisico }}</p>
+                    </div>
+                  }
+
+                  <div class="row-blocks">
+                    @if (atencion.indicaciones) {
+                      <div class="section-block half">
+                        <h4>Indicaciones</h4>
+                        <p>{{ atencion.indicaciones }}</p>
+                      </div>
+                    }
+
+                    @if (atencion.observaciones) {
+                      <div class="section-block half">
+                        <h4>Observaciones</h4>
+                        <p>{{ atencion.observaciones }}</p>
+                      </div>
+                    }
+                  </div>
+
+                  @if (getOtrosDiagnosticos(atencion).length > 0) {
+                    <div class="section-block">
+                      <h4>Otros diagnósticos</h4>
+                      <div class="diagnosticos-list">
+                        @for (diag of getOtrosDiagnosticos(atencion); track diag.id) {
+                          <div class="diag-item">
+                            <span class="cie10">{{ diag.codigoCie10 }}</span>
+                            <span class="desc">{{ diag.descripcion }}</span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </section>
+</div>

@@ -1,0 +1,202 @@
+<div class="page-container">
+
+  <section class="page-header">
+    <h1 class="page-title">
+      <span class="material-icons-outlined header-icon">manage_accounts</span>
+      Gestión de usuarios
+    </h1>
+    <p class="page-subtitle">Consulta las cuentas de acceso registradas en el sistema.</p>
+
+    <button type="button" id="btn-nuevo-usuario" class="btn btn-primary btn-nuevo" (click)="abrirFormulario()">
+      <span class="material-icons-outlined">person_add</span>
+      Nuevo usuario
+    </button>
+
+    @if (!cargando() && !error()) {
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="stat-value">{{ usuarios().length }}</span>
+          <span class="stat-label">Total</span>
+        </div>
+        <div class="stat-card stat-activos">
+          <span class="stat-value">{{ totalActivos() }}</span>
+          <span class="stat-label">Activos</span>
+        </div>
+        <div class="stat-card stat-inactivos">
+          <span class="stat-value">{{ totalInactivos() }}</span>
+          <span class="stat-label">Inactivos</span>
+        </div>
+      </div>
+    }
+  </section>
+
+  <div class="toolbar">
+    <div class="search-bar">
+      <span class="material-icons-outlined search-icon">search</span>
+      <input
+        id="busqueda-usuario"
+        type="text"
+        class="search-input"
+        placeholder="Buscar por usuario, rol o persona asociada..."
+        [value]="busqueda()"
+        (input)="onBusqueda($event)"
+        autocomplete="off"
+      />
+      @if (busqueda()) {
+        <button type="button" class="clear-btn" (click)="limpiarBusqueda()" title="Limpiar búsqueda">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      }
+    </div>
+
+    @if (!cargando() && !error()) {
+      <span class="result-count">{{ usuariosFiltrados().length }} de {{ usuarios().length }} usuarios</span>
+    }
+  </div>
+
+  @if (cargando()) {
+    <div class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Cargando usuarios...</p>
+    </div>
+  } @else if (error()) {
+    <div class="state-container error-state">
+      <h3 class="state-title">No se pudo cargar la lista</h3>
+      <p class="state-text">{{ error() }}</p>
+      <button type="button" class="btn" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (usuarios().length === 0) {
+    <div class="state-container">
+      <h3 class="state-title">Sin usuarios registrados</h3>
+      <p class="state-text">No hay usuarios en el sistema todavía.</p>
+    </div>
+  } @else if (usuariosFiltrados().length === 0) {
+    <div class="state-container">
+      <h3 class="state-title">Sin resultados</h3>
+      <p class="state-text">Ningún usuario coincide con "<strong>{{ busqueda() }}</strong>".</p>
+      <button type="button" class="btn" (click)="limpiarBusqueda()">Limpiar búsqueda</button>
+    </div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="usuarios-table" aria-label="Listado de usuarios">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Usuario</th>
+            <th scope="col">Rol</th>
+            <th scope="col">Médico / Paciente asociado</th>
+            <th scope="col">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of usuariosFiltrados(); track u.id; let i = $index) {
+            <tr [class.row-inactivo]="!u.activo">
+              <td class="cell-id">{{ i + 1 }}</td>
+              <td class="cell-nombre">{{ u.nombreUsuario }}</td>
+              <td><span class="rol-badge">{{ u.rol }}</span></td>
+              <td class="cell-desc">
+                @if (asociado(u)) {
+                  <span class="tipo-asociado">{{ tipoAsociado(u) }}:</span> {{ asociado(u) }}
+                } @else {
+                  —
+                }
+              </td>
+              <td>
+                <span class="estado-badge" [class.badge-activo]="u.activo" [class.badge-inactivo]="!u.activo">
+                  <span class="badge-dot"></span>
+                  {{ u.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (mensajeExito(); as msg) {
+    <div class="toast" role="status">
+      <span class="material-icons-outlined">check_circle</span>
+      {{ msg }}
+    </div>
+  }
+
+  @if (mostrarFormulario()) {
+    <div class="modal-backdrop" (click)="cerrarFormulario()">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="titulo-form-usuario" (click)="$event.stopPropagation()">
+        <h2 id="titulo-form-usuario" class="modal-title">Nuevo usuario</h2>
+
+        <form [formGroup]="form" (ngSubmit)="guardarUsuario()" novalidate autocomplete="off">
+          <div class="form-field">
+            <label for="f-rol">Rol *</label>
+            <select id="f-rol" formControlName="rol" (change)="cambiarRol()">
+              <option value="Medico">Médico</option>
+              <option value="Enfermero">Enfermero</option>
+            </select>
+          </div>
+
+          @if (form.controls.rol.value === 'Medico') {
+            <div class="form-field">
+              <label for="f-medico">Médico *</label>
+              <select id="f-medico" formControlName="medicoId">
+                <option [ngValue]="null" disabled>
+                  {{ cargandoMedicos() ? 'Cargando médicos...' : 'Seleccione un médico' }}
+                </option>
+                @for (m of medicosDisponibles(); track m.id) {
+                  <option [ngValue]="m.id">{{ m.nombres }} {{ m.apellidos }} ({{ m.numeroColegiatura }})</option>
+                }
+              </select>
+              @if (!cargandoMedicos() && medicosDisponibles().length === 0) {
+                <small class="field-hint">No hay médicos activos sin cuenta.</small>
+              }
+              @if (form.touched && form.hasError('medicoRequerido')) {
+                <small class="field-error">Seleccione un médico.</small>
+              }
+            </div>
+          }
+
+          <div class="form-field">
+            <label for="f-usuario">Nombre de usuario *</label>
+            <input id="f-usuario" type="text" formControlName="nombreUsuario" maxlength="100" autocomplete="off" />
+            @if (campoInvalido('nombreUsuario')) {
+              <small class="field-error">
+                {{ form.controls.nombreUsuario.hasError('espaciosExtremos')
+                  ? 'No puede tener espacios al inicio o al final.'
+                  : 'El nombre de usuario es obligatorio.' }}
+              </small>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="f-password">Contraseña *</label>
+            <input id="f-password" type="password" formControlName="password" maxlength="100" autocomplete="new-password" />
+            @if (campoInvalido('password')) {
+              <small class="field-error">La contraseña debe tener al menos 8 caracteres.</small>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="f-confirm">Confirmar contraseña *</label>
+            <input id="f-confirm" type="password" formControlName="confirmPassword" maxlength="100" autocomplete="new-password" />
+            @if (form.controls.confirmPassword.touched && form.hasError('passwordMismatch')) {
+              <small class="field-error">Las contraseñas no coinciden.</small>
+            }
+          </div>
+
+          @if (errorServidor(); as msg) {
+            <div class="form-error-server" role="alert">{{ msg }}</div>
+          }
+
+          <div class="modal-actions">
+            <button type="button" class="btn" (click)="cerrarFormulario()" [disabled]="guardando()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="guardando()">
+              {{ guardando() ? 'Guardando...' : 'Crear usuario' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+</div>
+

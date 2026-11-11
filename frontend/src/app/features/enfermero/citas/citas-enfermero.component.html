@@ -1,0 +1,130 @@
+<div class="page-container">
+
+  <section class="page-header">
+    <h1 class="page-title">
+      <span class="material-icons-outlined header-icon">calendar_month</span>
+      Citas de enfermería
+    </h1>
+    <p class="page-subtitle">Consulta las citas programadas y accede al registro de triaje.</p>
+
+    @if (!cargando() && !error()) {
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="stat-value">{{ citas().length }}</span>
+          <span class="stat-label">Total citas</span>
+        </div>
+        <div class="stat-card stat-pendientes">
+          <span class="stat-value">{{ totalPendientesTriaje() }}</span>
+          <span class="stat-label">Triajes pendientes</span>
+        </div>
+        <div class="stat-card stat-registrados">
+          <span class="stat-value">{{ totalConTriaje() }}</span>
+          <span class="stat-label">Con triaje</span>
+        </div>
+      </div>
+    }
+  </section>
+
+  <div class="toolbar">
+    <div class="search-bar">
+      <span class="material-icons-outlined search-icon">search</span>
+      <input
+        id="busqueda-citas-enfermero"
+        type="text"
+        class="search-input"
+        placeholder="Buscar por paciente, médico, especialidad, fecha o estado..."
+        [value]="busqueda()"
+        (input)="onBusqueda($event)"
+        autocomplete="off"
+      />
+      @if (busqueda()) {
+        <button type="button" class="clear-btn" (click)="limpiarBusqueda()" title="Limpiar búsqueda">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      }
+    </div>
+
+    @if (!cargando() && !error()) {
+      <span class="result-count">{{ citasFiltradas().length }} de {{ citas().length }} citas</span>
+    }
+  </div>
+
+  @if (cargando()) {
+    <div class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Cargando citas...</p>
+    </div>
+  } @else if (error()) {
+    <div class="state-container error-state">
+      <h3 class="state-title">No se pudo cargar la lista</h3>
+      <p class="state-text">{{ error() }}</p>
+      <button type="button" class="btn" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (citas().length === 0) {
+    <div class="state-container">
+      <h3 class="state-title">Sin citas registradas</h3>
+      <p class="state-text">Todavía no hay citas registradas en el sistema.</p>
+    </div>
+  } @else if (citasFiltradas().length === 0) {
+    <div class="state-container">
+      <h3 class="state-title">Sin resultados</h3>
+      <p class="state-text">Ninguna cita coincide con "<strong>{{ busqueda() }}</strong>".</p>
+      <button type="button" class="btn" (click)="limpiarBusqueda()">Limpiar búsqueda</button>
+    </div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="citas-table" aria-label="Listado de citas para enfermería">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Fecha y hora</th>
+            <th scope="col">Paciente</th>
+            <th scope="col">Médico</th>
+            <th scope="col">Especialidad</th>
+            <th scope="col">Estado cita</th>
+            <th scope="col">Triaje</th>
+            <th scope="col">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of citasFiltradas(); track c.id; let i = $index) {
+            <tr [class.row-cancelada]="c.estado === 'Cancelada'">
+              <td class="cell-id">{{ i + 1 }}</td>
+              <td class="cell-fecha">
+                <div>{{ formatearFecha(c.fechaHora) }}</div>
+                <small class="cell-hora">{{ formatearHora(c.fechaHora) }}</small>
+              </td>
+              <td class="cell-nombre">{{ c.pacienteNombre }}</td>
+              <td>Dr. {{ c.medicoNombre }}</td>
+              <td class="cell-desc">{{ c.especialidadNombre }}</td>
+              <td>
+                <span class="estado-badge"
+                      [class.badge-activo]="c.estado === 'Atendida'"
+                      [class.badge-pendiente]="c.estado === 'Reservada' || c.estado === 'Reprogramada'"
+                      [class.badge-inactivo]="c.estado === 'Cancelada' || c.estado === 'Ausente'">
+                  <span class="badge-dot"></span>
+                  {{ c.estado }}
+                </span>
+              </td>
+              <td>
+                <span class="estado-badge"
+                      [class.badge-activo]="c.tieneTriaje"
+                      [class.badge-pendiente]="!c.tieneTriaje">
+                  {{ c.tieneTriaje ? 'Registrado' : 'Pendiente' }}
+                </span>
+              </td>
+              <td>
+                <a class="btn btn-triaje" routerLink="/triaje">
+                  <span class="material-icons-outlined">monitor_heart</span>
+                  Ir a triaje
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>
+

@@ -1,0 +1,216 @@
+<div class="page-container">
+  <section class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Mi disponibilidad</h1>
+      <p class="page-subtitle">Administra los días y horarios en los que atenderás pacientes.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="abrirModalCrear()">
+        <span class="material-icons-outlined">add</span>
+        Agregar disponibilidad
+      </button>
+    </div>
+  </section>
+
+  <section class="content-section">
+    @if (loading()) {
+      <div class="state-container loading-state">
+        <div class="spinner"></div>
+        <p>Cargando tu disponibilidad...</p>
+      </div>
+    } @else if (error()) {
+      <div class="state-container error-state">
+        <span class="material-icons-outlined error-icon">error_outline</span>
+        <h3>Ocurrió un problema</h3>
+        <p>No se pudo cargar tu disponibilidad. Intenta nuevamente.</p>
+        <button class="btn btn-outline" (click)="cargarHorarios()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (horarios().length === 0) {
+      <div class="state-container empty-state">
+        <span class="material-icons-outlined empty-icon">event_available</span>
+        <h3>Aún no has registrado horarios de atención.</h3>
+        <p>Agrega tu primera disponibilidad para que los pacientes puedan reservar una cita contigo.</p>
+        <button class="btn btn-primary mt-3" (click)="abrirModalCrear()">
+          Agregar disponibilidad
+        </button>
+      </div>
+    } @else {
+      <div class="horarios-grid">
+        @for (horario of horarios(); track horario.id) {
+          <div class="horario-card" [class.inactivo]="!horario.activo">
+            
+            <!-- Turno Visualizer Header -->
+            <div class="horario-turno" [class]="getTurno(horario.horaInicio).toLowerCase().replace(' ', '-')">
+              {{ getTurno(horario.horaInicio) }}
+            </div>
+
+            <div class="card-body">
+              <div class="date-row">
+                <span class="material-icons-outlined">event</span>
+                <span class="date">{{ formatDateSpanish(horario.fecha) }}</span>
+              </div>
+              
+              <div class="time-row">
+                <span class="material-icons-outlined">schedule</span>
+                <span class="time">{{ formatTime(horario.horaInicio) }} - {{ formatTime(horario.horaFin) }}</span>
+              </div>
+
+              <div class="cupos-row">
+                <span class="material-icons-outlined">people</span>
+                <span class="cupos">{{ horario.cuposDisponibles }} cupos disponibles</span>
+              </div>
+
+              <div class="status-row">
+                <span class="status-badge" [class.badge-active]="horario.activo" [class.badge-inactive]="!horario.activo">
+                  {{ horario.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              @if (horario.activo) {
+                <button class="btn-action edit" (click)="abrirModalEditar(horario)" title="Editar">
+                  <span class="material-icons-outlined">edit</span>
+                  Editar
+                </button>
+                <button class="btn-action delete" (click)="confirmarDesactivar(horario)" title="Desactivar">
+                  <span class="material-icons-outlined">block</span>
+                  Desactivar
+                </button>
+              } @else {
+                <button class="btn-action reactivate" (click)="reactivarConMensaje(horario)" title="Reactivar">
+                  <span class="material-icons-outlined">restore</span>
+                  Reactivar
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </section>
+</div>
+
+<!-- Modal Crear/Editar -->
+@if (showModal()) {
+  <div class="modal-backdrop">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2>{{ modalMode() === 'create' ? 'Agregar disponibilidad' : 'Editar disponibilidad' }}</h2>
+        <button class="btn-close" (click)="cerrarModal()" [disabled]="isSubmitting()">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        @if (horarioTieneCitas()) {
+          <div class="alert alert-warning">
+            <span class="material-icons-outlined">warning</span>
+            <p>Este horario ya tiene citas asociadas. Para proteger las reservas de tus pacientes, no puedes modificar su fecha, horas ni cupos disponibles. Puedes desactivarlo para impedir nuevas reservas.</p>
+          </div>
+        } @else if (errorMessage()) {
+          <div class="alert alert-danger">
+            <span class="material-icons-outlined">error</span>
+            <p>{{ errorMessage() }}</p>
+          </div>
+        }
+
+        <div class="form-group">
+          <label>Fecha <span class="required">*</span></label>
+          <input type="date" class="form-control" [ngModel]="formData().fecha" (ngModelChange)="formData.set({...formData(), fecha: $event})" [disabled]="isSubmitting() || horarioTieneCitas()">
+        </div>
+
+        <div class="row-2">
+          <div class="form-group time-group">
+            <label>Hora de inicio <span class="required">*</span></label>
+            <div class="time-selectors" style="display: flex; gap: 8px; align-items: center;">
+              <select class="form-control" [ngModel]="formData().horaInicioH" (ngModelChange)="formData.set({...formData(), horaInicioH: $event})" [disabled]="isSubmitting() || horarioTieneCitas()">
+                <option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option>
+                <option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+              </select>
+              <span class="time-separator">:</span>
+              <select class="form-control" [ngModel]="formData().horaInicioM" (ngModelChange)="formData.set({...formData(), horaInicioM: $event})" [disabled]="isSubmitting() || horarioTieneCitas()">
+                <option value="00">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>
+              </select>
+              <select class="form-control" [ngModel]="formData().horaInicioP" (ngModelChange)="formData.set({...formData(), horaInicioP: $event})" [disabled]="isSubmitting() || horarioTieneCitas()">
+                <option value="AM">AM</option><option value="PM">PM</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group time-group">
+            <label>Hora de fin <span class="required">*</span></label>
+            <div class="time-selectors" style="display: flex; gap: 8px; align-items: center;">
+              <select class="form-control" [ngModel]="formData().horaFinH" (ngModelChange)="formData.set({...formData(), horaFinH: $event})" [disabled]="isSubmitting() || horarioTieneCitas()">
+                <option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option>
+                <option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+              </select>
+              <span class="time-separator">:</span>
+              <select class="form-control" [ngModel]="formData().horaFinM" (ngModelChange)="formData.set({...formData(), horaFinM: $event})" [disabled]="isSubmitting() || horarioTieneCitas()">
+                <option value="00">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>
+              </select>
+              <select class="form-control" [ngModel]="formData().horaFinP" (ngModelChange)="formData.set({...formData(), horaFinP: $event})" [disabled]="isSubmitting() || horarioTieneCitas()">
+                <option value="AM">AM</option><option value="PM">PM</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Cupos disponibles <span class="required">*</span></label>
+          <input type="number" min="1" step="1" class="form-control" [ngModel]="formData().cuposDisponibles" (ngModelChange)="formData.set({...formData(), cuposDisponibles: $event})" [disabled]="isSubmitting() || horarioTieneCitas()">
+        </div>
+
+        @if (previewHoraStr()) {
+          <div class="preview-box">
+            <span class="preview-label">Vista previa:</span>
+            <div class="preview-content">
+              <span class="preview-turno">{{ previewTurno() }}</span>
+              <span class="preview-time">{{ previewHoraStr() }}</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="cerrarModal()" [disabled]="isSubmitting()">Cancelar</button>
+        @if (!horarioTieneCitas()) {
+          <button class="btn btn-primary" (click)="guardarHorario()" [disabled]="isSubmitting()">
+            {{ isSubmitting() ? 'Guardando...' : (modalMode() === 'create' ? 'Guardar disponibilidad' : 'Actualizar disponibilidad') }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal Desactivar -->
+@if (showDeactivateModal()) {
+  <div class="modal-backdrop">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2>Desactivar disponibilidad</h2>
+        <button class="btn-close" (click)="cerrarModalDesactivar()" [disabled]="isSubmitting()">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-warning">
+          <span class="material-icons-outlined">warning</span>
+          <p>Este horario dejará de estar disponible para nuevas reservas. Las citas ya registradas no serán eliminadas.</p>
+        </div>
+        <p>¿Estás seguro de desactivar el horario del <strong>{{ horarioToDeactivate()?.fecha | date:'dd/MM/yyyy' }}</strong> a las <strong>{{ formatTime(horarioToDeactivate()?.horaInicio || '') }}</strong>?</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="cerrarModalDesactivar()" [disabled]="isSubmitting()">Cancelar</button>
+        <button class="btn btn-danger" (click)="ejecutarDesactivar()" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Desactivando...' : 'Desactivar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

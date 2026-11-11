@@ -1,0 +1,116 @@
+:root {
+  /* Clinical Palette - Unified Tokens */
+  --primary: #0284c7;
+  --primary-light: #38bdf8;
+  --primary-dark: #0369a1;
+  --primary-color: #0284c7;
+  --primary-hover: #0369a1;
+
+  --secondary: #0d9488;
+  --secondary-light: #14b8a6;
+
+  --success: #16a34a;
+  --success-color: #16a34a;
+  --warning: #d97706;
+  --warning-color: #d97706;
+  --danger: #dc2626;
+  --danger-color: #dc2626;
+
+  /* Surfaces & Backgrounds */
+  --background: #f1f5f9;
+  --background-color: #f8fafc;
+  --bg-color: #f8fafc;
+  --surface: #ffffff;
+  --surface-color: #ffffff;
+  --surface-muted: #f8fafc;
+  --surface-hover: #f1f5f9;
+
+  /* Typography Colors */
+  --text-main: #0f172a;
+  --text-color: #0f172a;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  /* Borders & Dividers */
+  --border: #e2e8f0;
+  --border-color: #e2e8f0;
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --header-height: 64px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.07), 0 2px 4px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.1), 0 4px 8px -2px rgba(15, 23, 42, 0.05);
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--background);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  text-decoration: none;
+  color: var(--primary);
+}
+
+ul {
+  list-style: none;
+}
+
+/* Custom subtle scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Material Icons Outlined configuration */
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons+Outlined');
+
+.material-icons-outlined {
+  font-family: 'Material Icons Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: 'liga';
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}

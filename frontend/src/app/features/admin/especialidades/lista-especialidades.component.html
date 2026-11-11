@@ -1,0 +1,200 @@
+<div class="page-container">
+
+  <section class="page-header">
+    <h1 class="page-title">
+      <span class="material-icons-outlined header-icon">category</span>
+      Gestión de especialidades
+    </h1>
+    <p class="page-subtitle">Consulta las especialidades médicas registradas en el sistema.</p>
+
+    <button type="button" id="btn-nueva-especialidad" class="btn btn-primary btn-nuevo" (click)="abrirFormulario()">
+      <span class="material-icons-outlined">add</span>
+      Nueva especialidad
+    </button>
+
+    @if (!cargando() && !error()) {
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="stat-value">{{ especialidades().length }}</span>
+          <span class="stat-label">Total</span>
+        </div>
+        <div class="stat-card stat-activas">
+          <span class="stat-value">{{ totalActivas() }}</span>
+          <span class="stat-label">Activas</span>
+        </div>
+        <div class="stat-card stat-inactivas">
+          <span class="stat-value">{{ totalInactivas() }}</span>
+          <span class="stat-label">Inactivas</span>
+        </div>
+      </div>
+    }
+  </section>
+
+  <div class="toolbar">
+    <div class="search-bar">
+      <span class="material-icons-outlined search-icon">search</span>
+      <input
+        id="busqueda-especialidad"
+        type="text"
+        class="search-input"
+        placeholder="Buscar por nombre..."
+        [value]="busqueda()"
+        (input)="onBusqueda($event)"
+        autocomplete="off"
+      />
+      @if (busqueda()) {
+        <button type="button" class="clear-btn" (click)="limpiarBusqueda()" title="Limpiar búsqueda">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      }
+    </div>
+
+    @if (!cargando() && !error()) {
+      <span class="result-count">{{ especialidadesFiltradas().length }} de {{ especialidades().length }} especialidades</span>
+    }
+  </div>
+
+  @if (cargando()) {
+    <div class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Cargando especialidades...</p>
+    </div>
+  } @else if (error()) {
+    <div class="state-container error-state">
+      <h3 class="state-title">No se pudo cargar la lista</h3>
+      <p class="state-text">{{ error() }}</p>
+      <button type="button" class="btn" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (especialidades().length === 0) {
+    <div class="state-container">
+      <h3 class="state-title">Sin especialidades registradas</h3>
+      <p class="state-text">No hay especialidades en el sistema todavía.</p>
+    </div>
+  } @else if (especialidadesFiltradas().length === 0) {
+    <div class="state-container">
+      <h3 class="state-title">Sin resultados</h3>
+      <p class="state-text">Ninguna especialidad coincide con "<strong>{{ busqueda() }}</strong>".</p>
+      <button type="button" class="btn" (click)="limpiarBusqueda()">Limpiar búsqueda</button>
+    </div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="especialidades-table" aria-label="Listado de especialidades">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Descripción</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (esp of especialidadesFiltradas(); track esp.id; let i = $index) {
+            <tr [class.row-inactivo]="!esp.activo">
+              <td class="cell-id">{{ i + 1 }}</td>
+              <td class="cell-nombre">{{ esp.nombre }}</td>
+              <td class="cell-desc">{{ esp.descripcion || '—' }}</td>
+              <td>
+                <span class="estado-badge" [class.badge-activo]="esp.activo" [class.badge-inactivo]="!esp.activo">
+                  <span class="badge-dot"></span>
+                  {{ esp.activo ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
+              <td>
+                <div class="acciones-wrap">
+                  <button type="button" class="btn btn-editar" (click)="abrirFormulario(esp)"
+                          [attr.aria-label]="'Editar especialidad ' + esp.nombre">
+                    <span class="material-icons-outlined">edit</span>
+                    Editar
+                  </button>
+                  <button type="button"
+                          class="btn btn-editar"
+                          [class.btn-desactivar]="esp.activo"
+                          [class.btn-activar]="!esp.activo"
+                          (click)="solicitarCambioEstado(esp)"
+                          [attr.aria-label]="(esp.activo ? 'Desactivar' : 'Activar') + ' especialidad ' + esp.nombre">
+                    <span class="material-icons-outlined">{{ esp.activo ? 'block' : 'check_circle_outline' }}</span>
+                    {{ esp.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (toast(); as t) {
+    <div class="toast" [class.toast-error]="t.tipo === 'error'" role="status">
+      <span class="material-icons-outlined">{{ t.tipo === 'exito' ? 'check_circle' : 'error_outline' }}</span>
+      {{ t.mensaje }}
+    </div>
+  }
+
+  @if (mostrarFormulario()) {
+    <div class="modal-backdrop" (click)="cerrarFormulario()">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="titulo-form-esp" (click)="$event.stopPropagation()">
+        <h2 id="titulo-form-esp" class="modal-title">{{ especialidadEditando() ? 'Editar especialidad' : 'Nueva especialidad' }}</h2>
+
+        <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+          <div class="form-field">
+            <label for="f-nombre">Nombre *</label>
+            <input id="f-nombre" type="text" formControlName="nombre" maxlength="100" />
+            @if (campoInvalido('nombre')) { <small class="field-error">El nombre es obligatorio.</small> }
+          </div>
+
+          <div class="form-field">
+            <label for="f-descripcion">Descripción</label>
+            <textarea id="f-descripcion" rows="3" formControlName="descripcion" maxlength="300"></textarea>
+          </div>
+
+          @if (errorServidor(); as msg) {
+            <div class="form-error-server" role="alert">{{ msg }}</div>
+          }
+
+          <div class="modal-actions">
+            <button type="button" class="btn" (click)="cerrarFormulario()" [disabled]="guardando()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="guardando()">
+              {{ guardando() ? 'Guardando...' : (especialidadEditando() ? 'Guardar cambios' : 'Guardar especialidad') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  @if (especialidadConfirmandoEstado(); as esp) {
+    <div class="modal-backdrop" (click)="cancelarCambioEstado()">
+      <div class="modal-card modal-confirm" role="dialog" aria-modal="true" aria-labelledby="titulo-confirm-esp" (click)="$event.stopPropagation()">
+        <h2 id="titulo-confirm-esp" class="modal-title">
+          {{ esp.activo ? 'Desactivar especialidad' : 'Activar especialidad' }}
+        </h2>
+        <p class="confirm-text">
+          ¿Está seguro de que desea {{ esp.activo ? 'desactivar' : 'activar' }} la especialidad
+          <strong>{{ esp.nombre }}</strong>?
+        </p>
+        @if (esp.activo) {
+          <p class="confirm-subtext">
+            La especialidad dejará de ofrecerse para nuevas reservas, pero se conservarán los médicos asociados, citas e historiales existentes.
+          </p>
+        }
+        <div class="modal-actions">
+          <button type="button" class="btn" (click)="cancelarCambioEstado()" [disabled]="procesandoEstado()">
+            Cancelar
+          </button>
+          <button type="button"
+                  class="btn"
+                  [class.btn-danger]="esp.activo"
+                  [class.btn-primary]="!esp.activo"
+                  (click)="confirmarCambioEstado()"
+                  [disabled]="procesandoEstado()">
+            {{ procesandoEstado() ? 'Procesando...' : (esp.activo ? 'Sí, desactivar' : 'Sí, activar') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>
+

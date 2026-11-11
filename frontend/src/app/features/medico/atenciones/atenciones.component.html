@@ -1,0 +1,314 @@
+<div class="page-container">
+  <!-- Header -->
+  <section class="page-header">
+    <div>
+      <h1 class="page-title">Atenciones médicas</h1>
+      <p class="page-subtitle">Consulta tus citas y registra la atención clínica de tus pacientes.</p>
+    </div>
+  </section>
+
+  <!-- Toast éxito -->
+  @if (mensajeExito()) {
+    <div class="toast-success">
+      <span class="material-icons-outlined">check_circle</span>
+      {{ mensajeExito() }}
+    </div>
+  }
+
+  <section class="content-section">
+    @if (loading()) {
+      <div class="state-container">
+        <div class="spinner"></div>
+        <p>Cargando atenciones...</p>
+      </div>
+    } @else if (error()) {
+      <div class="state-container error-state">
+        <span class="material-icons-outlined icon-lg">error_outline</span>
+        <h3>No se pudieron cargar las citas.</h3>
+        <button class="btn btn-outline" (click)="cargarDatos()">Reintentar</button>
+      </div>
+    } @else {
+      <div class="filtros-container">
+        <button class="filtro-btn" [class.active]="filtro() === 'Todas'" (click)="cambiarFiltro('Todas')">Todas</button>
+        <button class="filtro-btn" [class.active]="filtro() === 'Pendientes'" (click)="cambiarFiltro('Pendientes')">Listas para atender</button>
+        <button class="filtro-btn" [class.active]="filtro() === 'Atendidas'" (click)="cambiarFiltro('Atendidas')">Atendidas</button>
+      </div>
+
+      <!-- Grid de citas -->
+      @if (citasFiltradas().length === 0) {
+        <div class="state-container empty-state">
+          <span class="material-icons-outlined icon-lg">event_busy</span>
+          <h3>No hay citas disponibles para atención.</h3>
+        </div>
+      } @else {
+        <div class="citas-grid">
+          @for (cita of citasFiltradas(); track cita.id) {
+            <div class="cita-card" [class.card-atendida]="cita.estado === 'Atendida' || !!cita.atencion" [class.card-cancelada]="cita.estado === 'Cancelada'">
+              <!-- Cabecera de la card -->
+              <div class="card-head">
+                <div class="fecha-hora">
+                  <span class="material-icons-outlined">event</span>
+                  <div>
+                    <div class="fecha-txt">{{ getFechaFormateada(cita.fechaHora) }}</div>
+                    <div class="hora-txt">{{ formatTimeUi(cita.fechaHora) }}</div>
+                  </div>
+                </div>
+                <div class="badges-col">
+                  <span class="badge" [ngClass]="getEstadoCitaBadge(cita.estado)">{{ cita.estado }}</span>
+                  <span class="badge" [ngClass]="getEstadoBadge(cita).clase">{{ getEstadoBadge(cita).label }}</span>
+                </div>
+              </div>
+
+              <!-- Cuerpo -->
+              <div class="card-body">
+                <div class="info-row">
+                  <span class="label">Paciente</span>
+                  <span class="value paciente-name">{{ cita.pacienteNombre }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Especialidad</span>
+                  <span class="value">{{ cita.especialidadNombre }}</span>
+                </div>
+                @if (cita.motivoConsulta) {
+                  <div class="info-row">
+                    <span class="label">Motivo</span>
+                    <span class="value motivo-txt">{{ cita.motivoConsulta }}</span>
+                  </div>
+                }
+                <!-- Triaje chip -->
+                @if (cita.triaje) {
+                  <div class="triaje-chip triaje-ok">
+                    <span class="material-icons-outlined">monitor_heart</span> Triaje registrado
+                  </div>
+                } @else if (cita.estado !== 'Cancelada' && cita.estado !== 'Atendida') {
+                  <div class="triaje-chip triaje-pending">
+                    <span class="material-icons-outlined">warning_amber</span> Sin triaje
+                  </div>
+                }
+              </div>
+
+              <!-- Footer de la card -->
+              <div class="card-foot">
+                @if (puedeAtender(cita)) {
+                  <button class="btn btn-primary btn-sm" (click)="abrirFormulario(cita)">
+                    <span class="material-icons-outlined">medical_services</span>
+                    Atender paciente
+                  </button>
+                } @else if (cita.atencion || cita.estado === 'Atendida') {
+                  <span class="btn-noop badge-success-outline">
+                    <span class="material-icons-outlined">check_circle</span> Atención registrada
+                  </span>
+                } @else if (cita.estado === 'Cancelada') {
+                  <span class="btn-noop muted">No aplica para atención</span>
+                } @else if (!esCitaDeHoy(cita.fechaHora)) {
+                  <span class="btn-noop muted">
+                    {{ esCitaFutura(cita.fechaHora) ? 'Disponible el ' + getFechaCorta(cita.fechaHora) : 'Cita pasada' }}
+                  </span>
+                } @else if (!cita.triaje) {
+                  <span class="btn-noop warning">El paciente debe completar triaje antes de la atención.</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  </section>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL / PANEL DE ATENCIÓN MÉDICA -->
+<!-- ============================================================ -->
+@if (showFormulario() && citaSeleccionada()) {
+  <div class="drawer-overlay" (click)="cerrarFormulario()"></div>
+  <aside class="drawer-panel">
+    <div class="drawer-header">
+      <div class="drawer-title-group">
+        <span class="material-icons-outlined drawer-icon">assignment_turned_in</span>
+        <div>
+          <h2>Registrar atención médica</h2>
+          <p class="drawer-subtitle">Completa los campos clínicos y los diagnósticos del paciente.</p>
+        </div>
+      </div>
+      <button class="close-btn" (click)="cerrarFormulario()" [disabled]="guardando()">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      <!-- Resumen de cita -->
+      <div class="cita-summary">
+        <div class="summary-col">
+          <span class="summary-label">Paciente</span>
+          <span class="summary-value">{{ citaSeleccionada()?.pacienteNombre }}</span>
+        </div>
+        <div class="summary-col">
+          <span class="summary-label">Cita</span>
+          <span class="summary-value">{{ getFechaCorta(citaSeleccionada()!.fechaHora) }} · {{ formatTimeUi(citaSeleccionada()!.fechaHora) }}</span>
+        </div>
+        <div class="summary-col">
+          <span class="summary-label">Especialidad</span>
+          <span class="summary-value">{{ citaSeleccionada()?.especialidadNombre }}</span>
+        </div>
+        @if (citaSeleccionada()?.motivoConsulta) {
+          <div class="summary-col">
+            <span class="summary-label">Motivo</span>
+            <span class="summary-value">{{ citaSeleccionada()?.motivoConsulta }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- TRIAJE (solo lectura) -->
+      @if (citaSeleccionada()?.triaje) {
+        <div class="section-block">
+          <h3 class="section-title"><span class="material-icons-outlined">monitor_heart</span> Triaje registrado</h3>
+          <div class="triaje-grid">
+            <div class="triaje-item">
+              <span class="ti-label">Presión arterial</span>
+              <span class="ti-value">{{ citaSeleccionada()!.triaje!.presionSistolica }} / {{ citaSeleccionada()!.triaje!.presionDiastolica }} <small>mmHg</small></span>
+            </div>
+            <div class="triaje-item">
+              <span class="ti-label">Frecuencia cardíaca</span>
+              <span class="ti-value">{{ citaSeleccionada()!.triaje!.frecuenciaCardiaca }} <small>lpm</small></span>
+            </div>
+            <div class="triaje-item">
+              <span class="ti-label">Temperatura</span>
+              <span class="ti-value">{{ citaSeleccionada()!.triaje!.temperatura }} <small>°C</small></span>
+            </div>
+            <div class="triaje-item">
+              <span class="ti-label">Peso</span>
+              <span class="ti-value">{{ citaSeleccionada()!.triaje!.peso }} <small>kg</small></span>
+            </div>
+            <div class="triaje-item">
+              <span class="ti-label">Talla</span>
+              <span class="ti-value">{{ citaSeleccionada()!.triaje!.talla }} <small>m</small></span>
+            </div>
+            <div class="triaje-item">
+              <span class="ti-label">IMC</span>
+              <span class="ti-value imc-highlight">{{ citaSeleccionada()!.triaje!.imc }}</span>
+            </div>
+            @if (citaSeleccionada()!.triaje!.observaciones) {
+              <div class="triaje-item full-col">
+                <span class="ti-label">Observaciones de triaje</span>
+                <span class="ti-value">{{ citaSeleccionada()!.triaje!.observaciones }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- ATENCIÓN MÉDICA -->
+      <div class="section-block">
+        <h3 class="section-title"><span class="material-icons-outlined">description</span> Atención médica</h3>
+        <form [formGroup]="atencionForm" class="atencion-form">
+          <div class="form-group">
+            <label>Anamnesis <span class="req">*</span></label>
+            <textarea formControlName="anamnesis" class="form-textarea" rows="3" placeholder="Historia y síntomas del paciente..."></textarea>
+            @if (atencionForm.get('anamnesis')?.invalid && atencionForm.get('anamnesis')?.touched) {
+              <span class="val-error">La anamnesis es obligatoria.</span>
+            }
+          </div>
+          <div class="form-group">
+            <label>Examen físico <span class="req">*</span></label>
+            <textarea formControlName="examenFisico" class="form-textarea" rows="3" placeholder="Hallazgos del examen físico..."></textarea>
+            @if (atencionForm.get('examenFisico')?.invalid && atencionForm.get('examenFisico')?.touched) {
+              <span class="val-error">El examen físico es obligatorio.</span>
+            }
+          </div>
+          <div class="form-group">
+            <label>Indicaciones <span class="req">*</span></label>
+            <textarea formControlName="indicaciones" class="form-textarea" rows="3" placeholder="Tratamiento, medicamentos, recomendaciones..."></textarea>
+            @if (atencionForm.get('indicaciones')?.invalid && atencionForm.get('indicaciones')?.touched) {
+              <span class="val-error">Las indicaciones son obligatorias.</span>
+            }
+          </div>
+          <div class="form-group">
+            <label>Observaciones <span class="opt">(opcional)</span></label>
+            <textarea formControlName="observaciones" class="form-textarea" rows="2" placeholder="Observaciones adicionales..."></textarea>
+          </div>
+        </form>
+      </div>
+
+      <!-- DIAGNÓSTICOS CIE-10 -->
+      <div class="section-block">
+        <h3 class="section-title"><span class="material-icons-outlined">biotech</span> Diagnósticos CIE-10</h3>
+        <form [formGroup]="diagnosticosForm">
+          <div class="diagnosticos-list">
+            @for (ctrl of diagnosticosArray.controls; track $index) {
+              <div class="diagnostico-row" [formGroup]="ctrl | asFormGroup">
+                <div class="dx-fields">
+                  <div class="form-group dx-codigo">
+                    <label>Código CIE-10 <span class="req">*</span></label>
+                    <input type="text" formControlName="codigoCie10" class="form-control" placeholder="Z00.0" maxlength="10" />
+                    @if (ctrl.get('codigoCie10')?.invalid && ctrl.get('codigoCie10')?.touched) {
+                      <span class="val-error">Código requerido.</span>
+                    }
+                  </div>
+                  <div class="form-group dx-desc">
+                    <label>Descripción <span class="req">*</span></label>
+                    <input type="text" formControlName="descripcion" class="form-control" placeholder="Descripción del diagnóstico..." />
+                    @if (ctrl.get('descripcion')?.invalid && ctrl.get('descripcion')?.touched) {
+                      <span class="val-error">Descripción requerida.</span>
+                    }
+                  </div>
+                </div>
+                <div class="dx-actions">
+                  <label class="principal-label">
+                    <input type="radio" [checked]="ctrl.get('principal')?.value" (change)="marcarPrincipal($index)" />
+                    Principal
+                  </label>
+                  <button class="btn-remove" (click)="eliminarDiagnostico($index)" [disabled]="diagnosticosArray.length === 1" title="Eliminar diagnóstico">
+                    <span class="material-icons-outlined">delete_outline</span>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+          <button class="btn btn-outline btn-sm mt-2" (click)="agregarDiagnostico()">
+            <span class="material-icons-outlined">add</span> Agregar diagnóstico
+          </button>
+        </form>
+      </div>
+
+      <!-- Error de guardado -->
+      @if (errorGuardado()) {
+        <div class="error-alert">
+          <span class="material-icons-outlined">error</span>
+          {{ errorGuardado() }}
+        </div>
+      }
+    </div>
+
+    <div class="drawer-footer">
+      <button class="btn btn-outline" (click)="cerrarFormulario()" [disabled]="guardando()">Cancelar</button>
+      <button class="btn btn-primary" [disabled]="guardando()" (click)="solicitarConfirmacion()">
+        @if (guardando()) {
+          <span class="spinner-small"></span> Guardando...
+        } @else {
+          <span class="material-icons-outlined">done_all</span> Finalizar atención
+        }
+      </button>
+    </div>
+  </aside>
+}
+
+<!-- MODAL DE CONFIRMACIÓN -->
+@if (showConfirmacion()) {
+  <div class="confirm-overlay">
+    <div class="confirm-modal">
+      <span class="material-icons-outlined confirm-icon">warning_amber</span>
+      <h3>¿Finalizar atención médica?</h3>
+      <p>Al finalizar, la cita será marcada como <strong>Atendida</strong> y no se podrá registrar una segunda atención para esta cita.</p>
+      <div class="confirm-actions">
+        <button class="btn btn-outline" (click)="cancelarConfirmacion()" [disabled]="guardando()">Cancelar</button>
+        <button class="btn btn-primary" (click)="guardarAtencion()" [disabled]="guardando()">
+          @if (guardando()) {
+            <span class="spinner-small"></span> Enviando...
+          } @else {
+            Finalizar atención
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

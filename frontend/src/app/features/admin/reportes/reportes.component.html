@@ -1,0 +1,128 @@
+<div class="page-container">
+
+  <section class="page-header">
+    <h1 class="page-title">
+      <span class="material-icons-outlined header-icon">bar_chart</span>
+      Reportes del sistema
+    </h1>
+    <p class="page-subtitle">Indicadores de citas, ausentismo y registro de atenciones médicas.</p>
+
+    @if (!cargando() && !error()) {
+      @if (ausentismo(); as r) {
+        <div class="stats-row">
+          <div class="stat-card">
+            <span class="stat-value">{{ r.totalCitas }}</span>
+            <span class="stat-label">Total citas</span>
+          </div>
+          <div class="stat-card stat-atendidas">
+            <span class="stat-value">{{ r.totalAtendidas }}</span>
+            <span class="stat-label">Citas atendidas</span>
+          </div>
+          <div class="stat-card stat-canceladas">
+            <span class="stat-value">{{ r.totalCanceladas }}</span>
+            <span class="stat-label">Citas canceladas</span>
+          </div>
+          <div class="stat-card stat-ausentes">
+            <span class="stat-value">{{ r.totalAusentes }}</span>
+            <span class="stat-label">Citas ausentes</span>
+          </div>
+          <div class="stat-card stat-porcentaje">
+            <span class="stat-value">{{ r.porcentajeAusentismo }}%</span>
+            <span class="stat-label">% Ausentismo</span>
+          </div>
+          <div class="stat-card stat-atenciones">
+            <span class="stat-value">{{ totalAtenciones() }}</span>
+            <span class="stat-label">Atenciones médicas</span>
+          </div>
+        </div>
+      }
+    }
+  </section>
+
+  @if (cargando()) {
+    <div class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Cargando reportes...</p>
+    </div>
+  } @else if (error()) {
+    <div class="state-container error-state">
+      <h3 class="state-title">No se pudieron cargar los reportes</h3>
+      <p class="state-text">{{ error() }}</p>
+      <button type="button" class="btn" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    <section class="section-block">
+      <h2 class="section-title">Atenciones médicas registradas</h2>
+
+      <div class="toolbar">
+        <div class="search-bar">
+          <span class="material-icons-outlined search-icon">search</span>
+          <input
+            id="busqueda-atenciones"
+            type="text"
+            class="search-input"
+            placeholder="Buscar por paciente, médico o diagnóstico..."
+            [value]="busqueda()"
+            (input)="onBusqueda($event)"
+            autocomplete="off"
+          />
+          @if (busqueda()) {
+            <button type="button" class="clear-btn" (click)="limpiarBusqueda()" title="Limpiar búsqueda">
+              <span class="material-icons-outlined">close</span>
+            </button>
+          }
+        </div>
+
+        <span class="result-count">{{ atencionesFiltradas().length }} de {{ totalAtenciones() }} atenciones</span>
+      </div>
+
+      @if (atenciones().length === 0) {
+        <div class="state-container">
+          <h3 class="state-title">Sin atenciones médicas registradas</h3>
+          <p class="state-text">Todavía no existen atenciones médicas en el sistema.</p>
+        </div>
+      } @else if (atencionesFiltradas().length === 0) {
+        <div class="state-container">
+          <h3 class="state-title">Sin resultados</h3>
+          <p class="state-text">Ninguna atención coincide con "<strong>{{ busqueda() }}</strong>".</p>
+          <button type="button" class="btn" (click)="limpiarBusqueda()">Limpiar búsqueda</button>
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table class="reportes-table" aria-label="Reporte de atenciones médicas">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Fecha</th>
+                <th scope="col">Paciente</th>
+                <th scope="col">Médico</th>
+                <th scope="col">Motivo de consulta</th>
+                <th scope="col">Diagnóstico principal</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of atencionesFiltradas(); track a.atencionMedicaId; let i = $index) {
+                <tr>
+                  <td class="cell-id">{{ i + 1 }}</td>
+                  <td class="cell-fecha">{{ formatearFechaHora(a.fechaAtencion) }}</td>
+                  <td class="cell-nombre">{{ a.pacienteNombre }}</td>
+                  <td>Dr. {{ a.medicoNombre }}</td>
+                  <td class="cell-desc">{{ a.motivoConsulta || '—' }}</td>
+                  <td>
+                    @if (a.diagnosticoPrincipal) {
+                      <span class="diag-badge">{{ a.diagnosticoPrincipal }}</span>
+                    } @else {
+                      <span class="cell-desc">—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+
+</div>
+

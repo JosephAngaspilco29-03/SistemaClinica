@@ -1,0 +1,12 @@
+<div class="layout-container" [class.menu-open]="menuAbierto()">
+  @if (menuAbierto()) {
+    <div class="sidebar-backdrop" (click)="cerrarMenu()"></div>
+  }
+  <app-sidebar class="sidebar"></app-sidebar>
+  <div class="main-content">
+    <app-header class="header" [pageTitle]="pageTitle()" (toggleMenu)="toggleMenu()"></app-header>
+    <main class="content-area">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
